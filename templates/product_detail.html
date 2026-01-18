@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="main-content">
+    <div style="max-width: 1200px; margin: 0 auto;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 50px; align-items: start;">
+            <!-- Product Image -->
+            <div>
+                <img src="{{ product.image.url }}" alt="{{ product.name }}" 
+                     style="width: 100%; border-radius: 12px;">
+            </div>
+            
+            <!-- Product Info -->
+            <div>
+                <h1 style="font-family: var(--font-heading); font-size: 2.5rem; margin-bottom: 10px;">
+                    {{ product.name }}
+                </h1>
+                <p style="color: #666; margin-bottom: 20px;">{{ product.category.name }}</p>
+                <p style="font-family: var(--font-accent); font-size: 2rem; font-weight: 600; margin-bottom: 30px;">
+                    ₦{{ product.price }}
+                </p>
+                
+                <p style="line-height: 1.8; margin-bottom: 30px; color: #555;">
+                    {{ product.description }}
+                </p>
+                
+                <form method="post" action="{% url 'add_to_cart' product.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="add-to-cart-btn" style="width: auto; padding: 15px 40px;">
+                        Add to Cart
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Related Products -->
+        {% if related_products %}
+        <div style="margin-top: 80px;">
+            <h2 style="font-family: var(--font-heading); text-align: center; margin-bottom: 40px;">
+                You Might Also Like
+            </h2>
+            <div class="products-grid">
+                {% for product in related_products %}
+                <a href="{% url 'product_detail' product.slug %}" class="product-card">
+                    <img src="{{ product.image.url }}" alt="{{ product.name }}" class="product-image">
+                    <div class="product-info">
+                        <h3 class="product-name">{{ product.name }}</h3>
+                        <p class="product-category">{{ product.category.name }}</p>
+                        <p class="product-price">₦{{ product.price }}</p>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

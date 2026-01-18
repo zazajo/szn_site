@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="verification-container">
+    <div class="verification-content">
+        <h1>Payment Verification</h1>
+        <p class="order-info">Order #{{ order.order_number }}</p>
+        
+        <div class="verification-form-section">
+            <p>Please confirm your name to verify that you've made the payment:</p>
+            
+            <form method="post" class="verification-form">
+                {% csrf_token %}
+                
+                <div class="form-group">
+                    <label for="{{ form.customer_name.id_for_label }}">Your Name</label>
+                    {{ form.customer_name }}
+                    {% if form.customer_name.errors %}
+                    <div class="error">{{ form.customer_name.errors }}</div>
+                    {% endif %}
+                    <small class="form-help">Enter the same name you used in the order form</small>
+                </div>
+                
+                <button type="submit" class="verify-btn">Confirm Payment</button>
+            </form>
+        </div>
+        
+        <div class="verification-note">
+            <p><strong>Note:</strong> After verification, we'll check the transfer and update your order status. You'll receive an email confirmation once your payment is verified.</p>
+        </div>
+    </div>
+</div>
+
+<style>
+.verification-container {
+    max-width: 500px;
+    margin: 60px auto;
+    padding: 0 20px;
+}
+
+.verification-content {
+    background: white;
+    padding: 40px;
+    border-radius: 16px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+.verification-content h1 {
+    font-family: var(--font-heading);
+    margin-bottom: 10px;
+}
+
+.order-info {
+    color: #666;
+    margin-bottom: 30px;
+    font-family: var(--font-accent);
+}
+
+.verification-form-section {
+    margin-bottom: 30px;
+}
+
+.verification-form {
+    text-align: left;
+}
+
+.verify-btn {
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 15px 40px;
+    border-radius: 8px;
+    font-family: var(--font-accent);
+    font-size: 16px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    width: 100%;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.verify-btn:hover {
+    background: #218838;
+}
+
+.verification-note {
+    background: #e7f3ff;
+    padding: 20px;
+    border-radius: 8px;
+    border-left: 4px solid #007bff;
+    text-align: left;
+}
+
+.verification-note p {
+    margin: 0;
+    color: #004085;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,389 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+    <!-- Video Section -->
+    <section class="video-section">
+        <div class="video-container">
+            <video autoplay muted loop playsinline class="brand-video">
+                <source src="{% static 'videos/szn.mp4' %}" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+            <div class="video-overlay">
+                <h2 class="video-title">SZN Experience</h2>
+                <p class="video-subtitle">Where STYLE Meets SWAG</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Featured Products Section -->
+    <section class="featured-section">
+        <div class="main-content">
+            <h2 class="section-title">Featured Collection</h2>
+            <div class="products-grid">
+                {% for product in featured_products %}
+                <div class="featured-product-card">
+                    <div class="product-image-container">
+                        <img src="{{ product.image.url }}" alt="{{ product.name }}" class="product-image">
+                        
+                        <!-- Stock Status Badge -->
+                        {% if not product.in_stock %}
+                        <div class="sold-out-badge">
+                            <span>SOLD OUT</span>
+                        </div>
+                        {% else %}
+                        <div class="stock-badge">
+                            <span>{{ product.stock_quantity }} LEFT</span>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="product-overlay">
+                            {% if product.in_stock %}
+                            <form method="post" action="{% url 'add_to_cart' product.id %}" class="add-to-cart-form">
+                                {% csrf_token %}
+                                <button type="submit" class="add-to-cart-btn">
+                                    <span>Add to Cart</span>
+                                    <span class="price-tag">₦{{ product.price }}</span>
+                                </button>
+                            </form>
+                            {% else %}
+                            <button class="sold-out-btn" disabled>
+                                <span>Out of Stock</span>
+                                <span class="price-tag">₦{{ product.price }}</span>
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="product-info">
+                        <h3 class="product-name">{{ product.name }}</h3>
+                        <p class="product-category">{{ product.category.name }}</p>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="no-products">No featured products available.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+
+    <!-- Brand Shoot Gallery Section -->
+    <section class="brand-gallery">
+        <h2 class="section-title">The Collection</h2>
+        <div class="gallery-grid">
+            {% for image in brand_images %}
+            <div class="gallery-item">
+                <img src="{% static image %}" alt="SZN Brand Shoot {{ forloop.counter }}">
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <!-- Additional Content Section -->
+    <section class="main-content">
+        <div class="brand-story">
+            <h2>Why Choose SZN?</h2>
+            <p>
+                We believe in creating timeless pieces that transcend seasons. Our clothing combines 
+                exceptional craftsmanship with sustainable practices to deliver quality you can feel.
+            </p>
+        </div>
+    </section>
+
+<style>
+/* Video Section Styles */
+.video-section {
+    position: relative;
+    height: 80vh;
+    overflow: hidden;
+    background: #000;
+}
+
+.video-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.brand-video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.8;
+}
+
+.video-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    color: white;
+    background: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3));
+}
+
+.video-title {
+    font-family: var(--font-heading);
+    font-size: 4rem;
+    font-weight: 600;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+}
+
+.video-subtitle {
+    font-family: var(--font-body);
+    font-size: 1.3rem;
+    font-weight: 300;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+/* Featured Products Section */
+.featured-section {
+    padding: 80px 0;
+    background: #fafafa;
+}
+
+.section-title {
+    text-align: center;
+    font-family: var(--font-heading);
+    font-size: 2.5rem;
+    font-weight: 600;
+    margin-bottom: 50px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.products-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 30px;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.featured-product-card {
+    background: white;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.featured-product-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+}
+
+.featured-product-card .product-image-container {
+    position: relative;
+    height: 350px;
+    overflow: hidden;
+}
+
+.featured-product-card .product-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+}
+
+.featured-product-card:hover .product-image {
+    transform: scale(1.05);
+}
+
+/* Stock Badges */
+.stock-badge {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-family: var(--font-accent);
+    z-index: 2;
+}
+
+.sold-out-badge {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: #ff4444;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-family: var(--font-accent);
+    z-index: 2;
+}
+
+.featured-product-card .product-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(to bottom, transparent 40%, rgba(0, 0, 0, 0.7) 100%);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 30px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 1;
+}
+
+.featured-product-card:hover .product-overlay {
+    opacity: 1;
+}
+
+.add-to-cart-form {
+    width: 100%;
+}
+
+.add-to-cart-btn {
+    background: white;
+    color: black;
+    border: none;
+    padding: 15px 25px;
+    border-radius: 50px;
+    cursor: pointer;
+    font-family: var(--font-accent);
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.3s ease;
+}
+
+.add-to-cart-btn:hover {
+    background: #000;
+    color: white;
+    transform: translateY(-2px);
+}
+
+.sold-out-btn {
+    background: #666;
+    color: white;
+    border: none;
+    padding: 15px 25px;
+    border-radius: 50px;
+    font-family: var(--font-accent);
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: not-allowed;
+    opacity: 0.8;
+}
+
+.price-tag {
+    background: #000;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.sold-out-btn .price-tag {
+    background: #444;
+}
+
+.featured-product-card .product-info {
+    padding: 20px;
+    background: white;
+}
+
+.featured-product-card .product-name {
+    font-family: var(--font-heading);
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 5px;
+    color: #000;
+}
+
+.featured-product-card .product-category {
+    color: #666;
+    font-size: 0.9rem;
+    font-family: var(--font-body);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Brand Story */
+.brand-story {
+    text-align: center;
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+.brand-story h2 {
+    font-family: var(--font-heading);
+    font-size: 2.2rem;
+    margin-bottom: 30px;
+    font-weight: 600;
+}
+
+.brand-story p {
+    font-size: 1.1rem;
+    line-height: 1.8;
+    color: #666;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .video-title {
+        font-size: 2.5rem;
+    }
+    
+    .video-subtitle {
+        font-size: 1rem;
+    }
+    
+    .video-section {
+        height: 60vh;
+    }
+    
+    .section-title {
+        font-size: 2rem;
+    }
+    
+    .products-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    .video-title {
+        font-size: 2rem;
+    }
+    
+    .video-subtitle {
+        font-size: 0.9rem;
+    }
+}
+</style>
+{% endblock %}

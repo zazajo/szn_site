@@ -1,0 +1,230 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="checkout-container">
+    <h1 style="text-align: center; font-family: var(--font-heading); margin-bottom: 40px;">Checkout</h1>
+    
+    <div class="checkout-layout">
+        <!-- Order Summary -->
+        <div class="order-summary">
+            <h3>Order Summary</h3>
+            {% for item in cart_items %}
+            <div class="checkout-item">
+                <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}">
+                <div class="item-details">
+                    <h4>{{ item.product.name }}</h4>
+                    <p>Qty: {{ item.quantity }}</p>
+                    <p class="item-price">₦{{ item.total_price }}</p>
+                </div>
+            </div>
+            {% endfor %}
+            <div class="checkout-total">
+                <strong>Total: ₦{{ total }}</strong>
+            </div>
+        </div>
+        
+        <!-- Checkout Form -->
+        <div class="checkout-form-section">
+            <h3>Delivery Information</h3>
+            <form method="post" class="checkout-form">
+                {% csrf_token %}
+                
+                <div class="form-group">
+                    <label for="{{ form.customer_name.id_for_label }}">Full Name</label>
+                    {{ form.customer_name }}
+                    {% if form.customer_name.errors %}
+                    <div class="error">{{ form.customer_name.errors }}</div>
+                    {% endif %}
+                    <small class="form-help">Name must match your bank account name for verification</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="{{ form.customer_email.id_for_label }}">Email Address</label>
+                    {{ form.customer_email }}
+                    {% if form.customer_email.errors %}
+                    <div class="error">{{ form.customer_email.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    <label for="{{ form.customer_phone.id_for_label }}">Phone Number</label>
+                    {{ form.customer_phone }}
+                    {% if form.customer_phone.errors %}
+                    <div class="error">{{ form.customer_phone.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    <label for="{{ form.customer_address.id_for_label }}">Delivery Address</label>
+                    {{ form.customer_address }}
+                    {% if form.customer_address.errors %}
+                    <div class="error">{{ form.customer_address.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="{{ form.city.id_for_label }}">City</label>
+                        {{ form.city }}
+                        {% if form.city.errors %}
+                        <div class="error">{{ form.city.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="{{ form.state.id_for_label }}">State</label>
+                        {{ form.state }}
+                        {% if form.state.errors %}
+                        <div class="error">{{ form.state.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <button type="submit" class="proceed-payment-btn">Proceed to Payment</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.checkout-container {
+    max-width: 1200px;
+    margin: 40px auto;
+    padding: 0 20px;
+}
+
+.checkout-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 50px;
+    align-items: start;
+}
+
+.order-summary {
+    background: #f8f8f8;
+    padding: 30px;
+    border-radius: 12px;
+    height: fit-content;
+}
+
+.checkout-item {
+    display: flex;
+    gap: 15px;
+    padding: 15px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.checkout-item img {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.item-details h4 {
+    font-family: var(--font-heading);
+    margin-bottom: 5px;
+}
+
+.item-price {
+    font-family: var(--font-accent);
+    font-weight: 600;
+    color: #000;
+}
+
+.checkout-total {
+    text-align: right;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 2px solid #ddd;
+    font-size: 1.2rem;
+}
+
+.checkout-form-section {
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.form-group {
+    margin-bottom: 25px;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    font-family: var(--font-accent);
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.form-input {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid #eee;
+    border-radius: 8px;
+    font-family: var(--font-body);
+    font-size: 16px;
+    transition: border-color 0.3s ease;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: #000;
+}
+
+.form-help {
+    display: block;
+    margin-top: 5px;
+    color: #666;
+    font-size: 12px;
+    font-style: italic;
+}
+
+.error {
+    color: #ff4444;
+    font-size: 14px;
+    margin-top: 5px;
+}
+
+.proceed-payment-btn {
+    background: #000;
+    color: white;
+    border: none;
+    padding: 15px 30px;
+    border-radius: 8px;
+    font-family: var(--font-accent);
+    font-size: 16px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    width: 100%;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.proceed-payment-btn:hover {
+    background: #333;
+}
+
+@media (max-width: 768px) {
+    .checkout-layout {
+        grid-template-columns: 1fr;
+        gap: 30px;
+    }
+    
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %}

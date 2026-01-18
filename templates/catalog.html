@@ -1,0 +1,594 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="main-content">
+    <h1 style="text-align: center; font-family: var(--font-heading); margin-bottom: 20px; font-size: 3rem;">Catalog</h1>
+    <p style="text-align: center; color: #666; margin-bottom: 50px; max-width: 600px; margin-left: auto; margin-right: auto; font-size: 1.1rem;">
+        Browse through our complete collection of premium apparel.
+    </p>
+    
+    <!-- Category Cards with Icons -->
+    <div class="categories-section">
+        <h2 style="text-align: center; font-family: var(--font-heading); margin-bottom: 50px; font-size: 2rem;">Shop By Category</h2>
+        <div class="categories-grid">
+            {% for category in categories %}
+            <a href="{% url 'products' %}?category={{ category.slug }}" class="category-card-modern">
+                <div class="category-icon">
+                    {% if category.name|lower == 't-shirts' or category.name|lower == 'tees' or category.name|lower == 'tshirts' %}
+                    <!-- T-shirt icon -->
+                    <svg viewBox="0 0 24 24" width="48" height="48" fill="currentColor">
+                        <path d="M21,6H17A2,2 0 0,0 15,8H9A2,2 0 0,0 7,6H3V8H5V18A2,2 0 0,0 7,20H17A2,2 0 0,0 19,18V8H21V6M7,18V10H10V14H14V10H17V18H7Z" />
+                    </svg>
+                    {% elif category.name|lower == 'hoodies' or category.name|lower == 'sweatshirts' %}
+                    <!-- Hoodie icon -->
+                    <svg viewBox="0 0 24 24" width="48" height="48" fill="currentColor">
+                        <path d="M18 4H6C3.79 4 2 5.79 2 8V16C2 18.21 3.79 20 6 20H18C20.21 20 22 18.21 22 16V8C22 5.79 20.21 4 18 4M6 6H18C19.1 6 20 6.9 20 8V9H16V10H14V9H10V10H8V9H4V8C4 6.9 4.9 6 6 6M18 18H6C4.9 18 4 17.1 4 16V15H8V16H10V15H14V16H16V15H20V16C20 17.1 19.1 18 18 18Z" />
+                    </svg>
+                    {% elif category.name|lower == 'beanies' or category.name|lower == 'hats' %}
+                    <!-- Beanie/Hat icon -->
+                    <svg viewBox="0 0 24 24" width="48" height="48" fill="currentColor">
+                        <path d="M21.5,18.5L10.25,11.25L8.9,14.83L5,16.5L2.5,20.5C2.5,20.5 7.53,19.31 10.25,19.05C12.97,18.79 16.17,19.14 19.56,20.45C20.14,20.68 20.76,20.39 21,19.82C21.1,19.57 21.12,19.29 21.05,19.04C20.98,18.79 20.82,18.58 20.6,18.44L21.5,18.5M5,3C5,3 10,4 12,6.5C10,8 6,10 4.5,12.5C3.7,14 4,16 5,16.5L8.9,14.83C8.58,14.06 8.53,13.22 8.74,12.43L12,11.3C12.8,11 13.31,10.2 13.31,9.3C13.31,8.24 12.5,7.37 11.46,7.3C10.42,7.23 9.55,8.05 9.5,9.09C9.5,9.77 9.84,10.38 10.36,10.74L9.37,11.3L6.74,12.3C6,12.7 5.5,13.46 5.5,14.3L5,16.5C4,16 3.7,14 4.5,12.5C6,10 10,8 12,6.5C10,4 5,3 5,3Z" />
+                    </svg>
+                    {% elif category.name|lower == 'accessories' %}
+                    <!-- Accessories icon -->
+                    <svg viewBox="0 0 24 24" width="48" height="48" fill="currentColor">
+                        <path d="M21,11C21,16.55 17.16,21.74 12,23C6.84,21.74 3,16.55 3,11V5L12,1L21,5V11M12,21C15.75,20 19,15.54 19,11.22V6.3L12,3.18L5,6.3V11.22C5,15.54 8.25,20 12,21M12,5.68C12.5,5.68 12.95,6.11 12.95,6.63V10.11L16.78,12.19L17.84,10.91L13.5,8.82V6.63C13.5,6.11 13.95,5.68 14.45,5.68C15,5.68 15.45,6.11 15.45,6.63V8.82L17.14,9.73L16.19,11.19L14.45,10.11V13.37C14.45,13.89 14,14.32 13.5,14.32C13,14.32 12.55,13.89 12.55,13.37V10.11L8.72,12.19L7.66,10.91L12,8.82V6.63C12,6.11 12.45,5.68 12.95,5.68H12Z" />
+                    </svg>
+                    {% elif category.name|lower == 'jackets' or category.name|lower == 'outerwear' %}
+                    <!-- Jacket icon -->
+                    <svg viewBox="0 0 24 24" width="48" height="48" fill="currentColor">
+                        <path d="M5,4C5,2.9 5.9,2 7,2H17C18.1,2 19,2.9 19,4V9.5L21,12V16C21,17.11 20.11,18 19,18H17C17,18 17,18 17,19C17,20.66 15.66,22 14,22H10C8.34,22 7,20.66 7,19C7,18 7,18 7,18H5C3.9,18 3,17.1 3,16V12L5,9.5V4M7,4V9H10V8H14V9H17V4H7M12,15C12.55,15 13,15.45 13,16C13,16.55 12.55,17 12,17C11.45,17 11,16.55 11,16C11,15.45 11.45,15 12,15Z" />
+                    </svg>
+                    {% elif category.name|lower == 'pants' or category.name|lower == 'trousers' %}
+                    <!-- Pants icon -->
+                    <svg viewBox="0 0 24 24" width="48" height="48" fill="currentColor">
+                        <path d="M12 2L8 6H16L12 2M8 6H16L13 9H11L8 6M11 9L9 3H15L13 9H11M15.92 22C15.58 22.62 15 23 14.34 23H9.66C9 23 8.42 22.62 8.08 22L4 11.54L5 11L6 13H8L7 15L12 19.5L17 15L16 13H18L19 11L20 11.54L15.92 22Z" />
+                    </svg>
+                    {% elif category.name|lower == 'shoes' or category.name|lower == 'footwear' %}
+                    <!-- Shoes icon -->
+                    <svg viewBox="0 0 24 24" width="48" height="48" fill="currentColor">
+                        <path d="M21.5 9H19.5C19.5 7.07 17.93 5.5 16 5.5C14.07 5.5 12.5 7.07 12.5 9H10.5C9.12 9 8 10.12 8 11.5C8 12.88 9.12 14 10.5 14H12.5V20H21.5V14C22.88 14 24 12.88 24 11.5C24 10.12 22.88 9 21.5 9M16 7.5C16.83 7.5 17.5 8.17 17.5 9H14.5C14.5 8.17 15.17 7.5 16 7.5M10.5 12C10.22 12 10 11.78 10 11.5C10 11.22 10.22 11 10.5 11H12.5V12H10.5M21.5 12H19.5V11H21.5C21.78 11 22 11.22 22 11.5C22 11.78 21.78 12 21.5 12Z" />
+                    </svg>
+                    {% else %}
+                    <!-- Default clothing icon -->
+                    <svg viewBox="0 0 24 24" width="48" height="48" fill="currentColor">
+                        <path d="M21.6,18.2L13.1,10.9L14.8,7.4C15.5,7.1 16,6.4 16,5.5C16,4.1 14.9,3 13.5,3C12.8,3 12.1,3.3 11.6,3.9L7.1,8.8C6.9,9.1 6.8,9.4 6.8,9.7C6.8,10.2 7,10.7 7.4,11L11,13.5V19H9V21H15V19H13V12.8L13.1,12.9L21.8,19.4C22,19.6 22.3,19.7 22.6,19.7C23.1,19.7 23.6,19.4 23.8,19C24,18.7 24.1,18.4 24,18.1C23.9,17.8 23.7,17.6 23.4,17.5L21.6,18.2M8.4,9.7L12.4,5.5C12.6,5.3 12.8,5.2 13,5.2C13.5,5.2 13.8,5.6 13.8,6C13.8,6.2 13.7,6.5 13.6,6.7L11.6,10.8L9.3,9.2C9,9 8.8,9.4 8.4,9.7Z" />
+                    </svg>
+                    {% endif %}
+                </div>
+                <h3>{{ category.name }}</h3>
+                <p>{{ category.product_set.count }} items</p>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <!-- All Products in Masonry Grid -->
+    <div class="all-products-section" style="margin-top: 80px;">
+        <h2 style="text-align: center; font-family: var(--font-heading); margin-bottom: 50px; font-size: 2rem;">All Products</h2>
+        
+        <!-- Updated masonry grid with always-visible prices -->
+        <div class="masonry-grid">
+            {% for product in products %}
+            <div class="masonry-item {% cycle 'large' 'medium' 'small' 'medium' 'small' 'large' 'medium' %}">
+                <div class="product-card-modern">
+                    <a href="{% url 'product_detail' product.slug %}" class="product-image-link">
+                        <div class="product-image-container">
+                            <img src="{{ product.image.url }}" alt="{{ product.name }}" class="product-image-modern">
+                            
+                            <!-- Stock Status Badge - Always Visible -->
+                            {% if not product.in_stock %}
+                            <div class="sold-out-badge">
+                                <span>SOLD OUT</span>
+                            </div>
+                            {% elif product.stock_quantity < 5 %}
+                            <div class="low-stock-badge">
+                                <span>LOW STOCK</span>
+                            </div>
+                            {% else %}
+                            <div class="stock-badge">
+                                <span>{{ product.stock_quantity }} LEFT</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </a>
+                    
+                    <!-- Product Info - Always Visible -->
+                    <div class="product-info-modern">
+                        <a href="{% url 'product_detail' product.slug %}" class="product-link">
+                            <h3 class="product-name-modern">{{ product.name }}</h3>
+                            <p class="product-category-modern">{{ product.category.name }}</p>
+                        </a>
+                        
+                        <!-- Price - Always Visible -->
+                        <div class="price-container">
+                            <span class="product-price-modern">₦{{ product.price }}</span>
+                            
+                            <!-- Add to Cart Button - Always Visible on Mobile -->
+                            {% if product.in_stock %}
+                            <form method="post" action="{% url 'add_to_cart' product.id %}" class="add-to-cart-form-mobile">
+                                {% csrf_token %}
+                                <button type="submit" class="add-to-cart-btn-mobile">
+                                    Add to Cart
+                                </button>
+                            </form>
+                            {% else %}
+                            <button class="sold-out-btn-mobile" disabled>
+                                Sold Out
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Desktop Hover Overlay (Hidden on Mobile) -->
+                    <div class="product-overlay-desktop">
+                        {% if product.in_stock %}
+                        <form method="post" action="{% url 'add_to_cart' product.id %}" class="add-to-cart-form">
+                            {% csrf_token %}
+                            <button type="submit" class="add-to-cart-btn-modern">
+                                <span>Add to Cart</span>
+                                <span class="price-tag">₦{{ product.price }}</span>
+                            </button>
+                        </form>
+                        {% else %}
+                        <button class="sold-out-btn-modern" disabled>
+                            <span>Out of Stock</span>
+                            <span class="price-tag">₦{{ product.price }}</span>
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="no-products" style="grid-column: 1 / -1; text-align: center; padding: 60px 0;">
+                <p style="color: #666; font-size: 1.1rem;">No products available yet.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<style>
+/* Category Cards with Icons */
+.categories-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 25px;
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.category-card-modern {
+    text-decoration: none;
+    color: inherit;
+    background: white;
+    border-radius: 16px;
+    padding: 30px 20px;
+    text-align: center;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+    border: 1px solid #f0f0f0;
+}
+
+.category-card-modern:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+    border-color: #000;
+}
+
+.category-icon {
+    width: 80px;
+    height: 80px;
+    background: #f8f8f8;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    color: #000;
+    transition: background 0.3s ease;
+}
+
+.category-card-modern:hover .category-icon {
+    background: #000;
+    color: white;
+}
+
+.category-card-modern h3 {
+    font-family: var(--font-heading);
+    font-size: 1.2rem;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.category-card-modern p {
+    color: #666;
+    font-size: 0.9rem;
+    font-family: var(--font-accent);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Masonry Grid */
+.masonry-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-auto-rows: 400px;
+    grid-gap: 30px;
+    margin-top: 20px;
+}
+
+.masonry-item.large {
+    grid-row: span 2;
+}
+
+.masonry-item.medium {
+    grid-row: span 1;
+}
+
+.masonry-item.small {
+    grid-row: span 1;
+}
+
+.product-card-modern {
+    background: white;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    position: relative;
+}
+
+.product-card-modern:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+}
+
+.product-image-link {
+    display: block;
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+}
+
+.product-image-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.product-image-modern {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+}
+
+.product-card-modern:hover .product-image-modern {
+    transform: scale(1.05);
+}
+
+/* Stock Badges - Always Visible */
+.stock-badge, .sold-out-badge, .low-stock-badge {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-family: var(--font-accent);
+    z-index: 2;
+}
+
+.stock-badge {
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+}
+
+.sold-out-badge {
+    background: #ff4444;
+    color: white;
+    padding: 8px 16px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+}
+
+.low-stock-badge {
+    background: #ff9800;
+    color: black;
+    font-weight: 700;
+}
+
+/* Product Info - Always Visible */
+.product-info-modern {
+    padding: 20px;
+    background: white;
+    border-top: 1px solid #f0f0f0;
+}
+
+.product-link {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    margin-bottom: 15px;
+}
+
+.product-name-modern {
+    font-family: var(--font-heading);
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin-bottom: 5px;
+    color: #000;
+    line-height: 1.3;
+}
+
+.product-category-modern {
+    color: #666;
+    font-size: 0.9rem;
+    font-family: var(--font-body);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Price Container - Always Visible */
+.price-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+}
+
+.product-price-modern {
+    font-family: var(--font-accent);
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #000;
+}
+
+/* Mobile Add to Cart Button - Always Visible */
+.add-to-cart-form-mobile {
+    display: block;
+}
+
+.add-to-cart-btn-mobile {
+    background: #000;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-family: var(--font-accent);
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.add-to-cart-btn-mobile:hover {
+    background: #333;
+}
+
+.sold-out-btn-mobile {
+    background: #666;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 25px;
+    font-family: var(--font-accent);
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: not-allowed;
+    opacity: 0.8;
+    white-space: nowrap;
+}
+
+/* Desktop Overlay (Hidden on Mobile) */
+.product-overlay-desktop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(to bottom, transparent 40%, rgba(0, 0, 0, 0.7) 100%);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 30px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 1;
+    pointer-events: none;
+}
+
+.product-card-modern:hover .product-overlay-desktop {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.add-to-cart-form {
+    width: 100%;
+}
+
+.add-to-cart-btn-modern {
+    background: white;
+    color: black;
+    border: none;
+    padding: 15px 25px;
+    border-radius: 50px;
+    cursor: pointer;
+    font-family: var(--font-accent);
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.3s ease;
+}
+
+.add-to-cart-btn-modern:hover {
+    background: #000;
+    color: white;
+    transform: translateY(-2px);
+}
+
+.sold-out-btn-modern {
+    background: #666;
+    color: white;
+    border: none;
+    padding: 15px 25px;
+    border-radius: 50px;
+    font-family: var(--font-accent);
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: not-allowed;
+    opacity: 0.8;
+}
+
+.price-tag {
+    background: #000;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.sold-out-btn-modern .price-tag {
+    background: #444;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+    .masonry-grid {
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        grid-auto-rows: auto;
+        grid-gap: 20px;
+    }
+    
+    .masonry-item.large,
+    .masonry-item.medium,
+    .masonry-item.small {
+        grid-row: span 1;
+    }
+    
+    .product-card-modern {
+        height: auto;
+        min-height: 400px;
+    }
+    
+    .product-info-modern {
+        padding: 15px;
+    }
+    
+    .product-name-modern {
+        font-size: 1.1rem;
+    }
+    
+    .product-price-modern {
+        font-size: 1.2rem;
+    }
+    
+    .add-to-cart-btn-mobile {
+        padding: 8px 16px;
+        font-size: 11px;
+    }
+    
+    .sold-out-btn-mobile {
+        padding: 8px 16px;
+        font-size: 11px;
+    }
+    
+    /* Hide desktop overlay on mobile */
+    .product-overlay-desktop {
+        display: none;
+    }
+    
+    /* Stock badges smaller on mobile */
+    .stock-badge, .sold-out-badge, .low-stock-badge {
+        top: 10px;
+        right: 10px;
+        font-size: 10px;
+        padding: 4px 10px;
+    }
+    
+    .sold-out-badge {
+        padding: 6px 12px;
+        font-size: 10px;
+    }
+    
+    /* Categories grid mobile */
+    .categories-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+    }
+    
+    .category-card-modern {
+        padding: 20px 15px;
+    }
+    
+    .category-icon {
+        width: 60px;
+        height: 60px;
+        margin-bottom: 15px;
+    }
+    
+    .category-icon svg {
+        width: 32px;
+        height: 32px;
+    }
+}
+
+@media (max-width: 480px) {
+    .masonry-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .product-card-modern {
+        min-height: 350px;
+    }
+    
+    .price-container {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .add-to-cart-btn-mobile {
+        width: 100%;
+        padding: 10px;
+    }
+    
+    .sold-out-btn-mobile {
+        width: 100%;
+        padding: 10px;
+    }
+    
+    .categories-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %}

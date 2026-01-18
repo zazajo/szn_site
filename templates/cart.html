@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="cart-container">
+    <h1 style="font-family: var(--font-heading); margin-bottom: 40px;">Shopping Cart</h1>
+    
+    {% if cart_items %}
+        {% for item in cart_items %}
+        <div class="cart-item">
+            <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}" class="cart-item-image">
+            
+            <div class="cart-item-details">
+                <h3 class="cart-item-name">{{ item.product.name }}</h3>
+                <p class="cart-item-price">${{ item.product.price }}</p>
+                
+                <form method="post" action="{% url 'update_cart' item.id %}" class="quantity-controls">
+                    {% csrf_token %}
+                    <button type="button" class="quantity-btn" onclick="decrementQuantity({{ item.id }})">-</button>
+                    <input type="number" name="quantity" value="{{ item.quantity }}" min="1" 
+                           class="quantity-input" id="quantity-{{ item.id }}">
+                    <button type="button" class="quantity-btn" onclick="incrementQuantity({{ item.id }})">+</button>
+                    <button type="submit" style="display: none;" id="update-btn-{{ item.id }}">Update</button>
+                </form>
+            </div>
+            
+            <div style="text-align: right;">
+                <p style="font-family: var(--font-accent); font-weight: 600; font-size: 1.2rem;">
+                    ₦{{ item.total_price }}
+                </p>
+                <a href="{% url 'remove_from_cart' item.id %}" class="remove-btn">Remove</a>
+            </div>
+        </div>
+        {% endfor %}
+        
+        <div class="cart-total">
+            <strong>Total: ₦{{ total }}</strong>
+        </div>
+        
+        <div style="text-align: left; margin-top: 20px; text-decoration: none;">
+    <a href="{% url 'checkout' %}" class="checkout-btn">Proceed to Checkout</a>
+</div>
+    {% else %}
+        <div style="text-align: center; padding: 60px 0;">
+            <h2 style="font-family: var(--font-heading); margin-bottom: 20px;">Your cart is empty</h2>
+            <p style="color: #666; margin-bottom: 30px;">Discover our collection and add some items to your cart.</p>
+            <a href="{% url 'products' %}" class="btn btn-primary">Continue Shopping</a>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+function incrementQuantity(itemId) {
+    const input = document.getElementById('quantity-' + itemId);
+    input.value = parseInt(input.value) + 1;
+    document.getElementById('update-btn-' + itemId).click();
+}
+
+function decrementQuantity(itemId) {
+    const input = document.getElementById('quantity-' + itemId);
+    if (parseInt(input.value) > 1) {
+        input.value = parseInt(input.value) - 1;
+        document.getElementById('update-btn-' + itemId).click();
+    }
+}
+</script>
+{% endblock %}

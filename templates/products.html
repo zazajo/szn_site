@@ -1,0 +1,488 @@
+<!-- szn_site/core/templates/core/products.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="main-content">
+    <h1 style="text-align: center; font-family: var(--font-heading); margin-bottom: 20px;">The Collection</h1>
+    <p style="text-align: center; color: #666; margin-bottom: 50px; max-width: 600px; margin-left: auto; margin-right: auto;">
+        Discover our curated selection of premium apparel designed for the modern individual.
+    </p>
+    
+    <!-- Category Filters -->
+    <div class="category-filters">
+        <a href="{% url 'products' %}" class="category-filter {% if not selected_category %}active{% endif %}">All</a>
+        {% for category in categories %}
+        <a href="{% url 'products' %}?category={{ category.slug }}" 
+           class="category-filter {% if selected_category == category.slug %}active{% endif %}">
+            {{ category.name }}
+        </a>
+        {% endfor %}
+    </div>
+    
+    <!-- Asymmetrical Products Grid - Mobile Optimized -->
+    <div class="masonry-grid">
+        {% for product in products %}
+        <div class="masonry-item {% cycle 'large' 'medium' 'small' 'medium' 'small' 'large' 'medium' %}">
+            <div class="product-card-modern">
+                <a href="{% url 'product_detail' product.slug %}" class="product-image-link">
+                    <div class="product-image-container">
+                        <img src="{{ product.image.url }}" alt="{{ product.name }}" class="product-image-modern">
+                        
+                        <!-- Stock Status Badge - Always Visible -->
+                        {% if not product.in_stock %}
+                        <div class="sold-out-badge">
+                            <span>SOLD OUT</span>
+                        </div>
+                        {% elif product.stock_quantity < 5 %}
+                        <div class="low-stock-badge">
+                            <span>LOW STOCK</span>
+                        </div>
+                        {% else %}
+                        <div class="stock-badge">
+                            <span>{{ product.stock_quantity }} LEFT</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </a>
+                
+                <!-- Product Info - Always Visible -->
+                <div class="product-info-modern">
+                    <a href="{% url 'product_detail' product.slug %}" class="product-link">
+                        <h3 class="product-name-modern">{{ product.name }}</h3>
+                        <p class="product-category-modern">{{ product.category.name }}</p>
+                    </a>
+                    
+                    <!-- Price - Always Visible -->
+                    <div class="price-container">
+                        <span class="product-price-modern">₦{{ product.price }}</span>
+                        
+                        <!-- Add to Cart Button - Always Visible on Mobile -->
+                        {% if product.in_stock %}
+                        <form method="post" action="{% url 'add_to_cart' product.id %}" class="add-to-cart-form-mobile">
+                            {% csrf_token %}
+                            <button type="submit" class="add-to-cart-btn-mobile">
+                                Add to Cart
+                            </button>
+                        </form>
+                        {% else %}
+                        <button class="sold-out-btn-mobile" disabled>
+                            Sold Out
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Desktop Hover Overlay (Hidden on Mobile) -->
+                <div class="product-overlay-desktop">
+                    {% if product.in_stock %}
+                    <form method="post" action="{% url 'add_to_cart' product.id %}" class="add-to-cart-form">
+                        {% csrf_token %}
+                        <button type="submit" class="add-to-cart-btn-modern">
+                            <span>Add to Cart</span>
+                            <span class="price-tag">₦{{ product.price }}</span>
+                        </button>
+                    </form>
+                    {% else %}
+                    <button class="sold-out-btn-modern" disabled>
+                        <span>Out of Stock</span>
+                        <span class="price-tag">₦{{ product.price }}</span>
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="no-products">
+            <p style="text-align: center; color: #666; font-size: 1.1rem;">No products found in this category.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+.masonry-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-auto-rows: 400px;
+    grid-gap: 30px;
+    margin-top: 50px;
+}
+
+.masonry-item.large {
+    grid-row: span 2;
+}
+
+.masonry-item.medium {
+    grid-row: span 1;
+}
+
+.masonry-item.small {
+    grid-row: span 1;
+}
+
+.product-card-modern {
+    background: white;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    position: relative;
+}
+
+.product-card-modern:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+}
+
+.product-image-link {
+    display: block;
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+}
+
+.product-image-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.product-image-modern {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+}
+
+.product-card-modern:hover .product-image-modern {
+    transform: scale(1.05);
+}
+
+/* Stock Badges - Always Visible */
+.stock-badge, .sold-out-badge, .low-stock-badge {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-family: var(--font-accent);
+    z-index: 2;
+}
+
+.stock-badge {
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+}
+
+.sold-out-badge {
+    background: #ff4444;
+    color: white;
+    padding: 8px 16px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+}
+
+.low-stock-badge {
+    background: #ff9800;
+    color: black;
+    font-weight: 700;
+}
+
+/* Product Info - Always Visible */
+.product-info-modern {
+    padding: 20px;
+    background: white;
+    border-top: 1px solid #f0f0f0;
+}
+
+.product-link {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    margin-bottom: 15px;
+}
+
+.product-name-modern {
+    font-family: var(--font-heading);
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin-bottom: 5px;
+    color: #000;
+    line-height: 1.3;
+}
+
+.product-category-modern {
+    color: #666;
+    font-size: 0.9rem;
+    font-family: var(--font-body);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Price Container - Always Visible */
+.price-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+}
+
+.product-price-modern {
+    font-family: var(--font-accent);
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #000;
+}
+
+/* Mobile Add to Cart Button - Always Visible */
+.add-to-cart-form-mobile {
+    display: block;
+}
+
+.add-to-cart-btn-mobile {
+    background: #000;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-family: var(--font-accent);
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.add-to-cart-btn-mobile:hover {
+    background: #333;
+}
+
+.sold-out-btn-mobile {
+    background: #666;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 25px;
+    font-family: var(--font-accent);
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: not-allowed;
+    opacity: 0.8;
+    white-space: nowrap;
+}
+
+/* Desktop Overlay (Hidden on Mobile) */
+.product-overlay-desktop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(to bottom, transparent 40%, rgba(0, 0, 0, 0.7) 100%);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 30px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 1;
+    pointer-events: none;
+}
+
+.product-card-modern:hover .product-overlay-desktop {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.add-to-cart-form {
+    width: 100%;
+}
+
+.add-to-cart-btn-modern {
+    background: white;
+    color: black;
+    border: none;
+    padding: 15px 25px;
+    border-radius: 50px;
+    cursor: pointer;
+    font-family: var(--font-accent);
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.3s ease;
+}
+
+.add-to-cart-btn-modern:hover {
+    background: #000;
+    color: white;
+    transform: translateY(-2px);
+}
+
+.sold-out-btn-modern {
+    background: #666;
+    color: white;
+    border: none;
+    padding: 15px 25px;
+    border-radius: 50px;
+    font-family: var(--font-accent);
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: not-allowed;
+    opacity: 0.8;
+}
+
+.price-tag {
+    background: #000;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.sold-out-btn-modern .price-tag {
+    background: #444;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+    .masonry-grid {
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        grid-auto-rows: auto;
+        grid-gap: 20px;
+    }
+    
+    .masonry-item.large,
+    .masonry-item.medium,
+    .masonry-item.small {
+        grid-row: span 1;
+    }
+    
+    .product-card-modern {
+        height: auto;
+        min-height: 400px;
+    }
+    
+    .product-info-modern {
+        padding: 15px;
+    }
+    
+    .product-name-modern {
+        font-size: 1.1rem;
+    }
+    
+    .product-price-modern {
+        font-size: 1.2rem;
+    }
+    
+    .add-to-cart-btn-mobile {
+        padding: 8px 16px;
+        font-size: 11px;
+    }
+    
+    .sold-out-btn-mobile {
+        padding: 8px 16px;
+        font-size: 11px;
+    }
+    
+    /* Hide desktop overlay on mobile */
+    .product-overlay-desktop {
+        display: none;
+    }
+    
+    /* Stock badges smaller on mobile */
+    .stock-badge, .sold-out-badge, .low-stock-badge {
+        top: 10px;
+        right: 10px;
+        font-size: 10px;
+        padding: 4px 10px;
+    }
+    
+    .sold-out-badge {
+        padding: 6px 12px;
+        font-size: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .masonry-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .product-card-modern {
+        min-height: 350px;
+    }
+    
+    .price-container {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .add-to-cart-btn-mobile {
+        width: 100%;
+        padding: 10px;
+    }
+    
+    .sold-out-btn-mobile {
+        width: 100%;
+        padding: 10px;
+    }
+}
+
+/* Category Filters */
+.category-filters {
+    display: flex;
+    gap: 10px;
+    margin: 30px 0;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.category-filter {
+    padding: 12px 24px;
+    background: #f8f8f8;
+    border-radius: 25px;
+    text-decoration: none;
+    color: #333;
+    font-family: var(--font-accent);
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    transition: all 0.3s ease;
+    border: 1px solid transparent;
+}
+
+.category-filter:hover,
+.category-filter.active {
+    background: #000;
+    color: white;
+    border-color: #000;
+}
+</style>
+{% endblock %}

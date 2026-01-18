@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="main-content">
+    <h1>Search Results</h1>
+    
+    {% if query %}
+        <p style="text-align: center; margin-bottom: 40px; color: #666;">
+            {% if results %}
+                Found {{ results|length }} result(s) for "{{ query }}"
+            {% else %}
+                No results found for "{{ query }}"
+            {% endif %}
+        </p>
+    {% endif %}
+    
+    <div class="products-grid">
+        {% for product in results %}
+        <a href="{% url 'product_detail' product.slug %}" class="product-card">
+            <img src="{{ product.image.url }}" alt="{{ product.name }}" class="product-image">
+            <div class="product-info">
+                <h3 class="product-name">{{ product.name }}</h3>
+                <p class="product-category">{{ product.category.name }}</p>
+                <p class="product-price">₦{{ product.price }}</p>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
