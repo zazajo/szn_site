@@ -27,12 +27,12 @@ def get_cart(request):
 
 def home(request):
     brand_images = [
-        'images/b1.jpg',
-        'images/b2.jpg', 
-        'images/b3.jpg',
-        'images/b4.jpg',
-        'images/b5.jpg',
-        'images/b6.jpg',
+        'images/b1.JPG',
+        'images/b2.JPG', 
+        'images/b3.JPG',
+        'images/b4.JPG',
+        'images/b5.JPG',
+        'images/b6.JPG',
     ]
     
     # Use stock_quantity__gt=0 instead of in_stock
