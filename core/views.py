@@ -310,7 +310,7 @@ Payment Deadline: {order.payment_deadline.strftime('%Y-%m-%d %H:%M:%S')}
                 admin_message,
                 settings.DEFAULT_FROM_EMAIL,
                 [settings.RECIPIENT_EMAIL],
-                fail_silently=True,  # Don't fail the checkout
+                fail_silently=False,  # Don't fail the checkout
             )
             
             # Customer message
@@ -337,7 +337,7 @@ Please make payment within 2 hours to secure your order.
                 customer_message,
                 settings.DEFAULT_FROM_EMAIL,
                 [order.customer_email],
-                fail_silently=True,
+                fail_silently=False,
             )
             
             print("\n✓ Emails would have been sent (check console for actual content)")
@@ -377,7 +377,7 @@ Items: {', '.join([item.product.name for item in order.orderitem_set.all()])}
                 message,
                 settings.DEFAULT_FROM_EMAIL,
                 [settings.RECIPIENT_EMAIL],
-                fail_silently=True,
+                fail_silently=False,
             )
         except Exception as e:
             print(f"Payment verification email failed: {e}")
