@@ -37,7 +37,36 @@ SECRET_KEY = 'django-insecure-^2kjj@qm+szgqs@ozo8&_1rqobpo8ttzq1%o4$3ue-t379_mu8
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+# Your production domain
+ALLOWED_HOSTS = [
+    'sznisreal.com',
+    'www.sznisreal.com',
+    '.railway.app',
+    'localhost',
+    '127.0.0.1',
+]
+
+# CSRF settings
+CSRF_TRUSTED_ORIGINS = [
+    'https://sznisreal.com',
+    'https://www.sznisreal.com',
+    'https://*.railway.app', 
+]
+
+# Security settings for production
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_SSL_REDIRECT = True
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_HSTS_SECONDS = 31536000  # 1 year
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
+
+
+CSRF_COOKIE_DOMAIN = '.sznisreal.com'  # For subdomain support
+SESSION_COOKIE_DOMAIN = '.sznisreal.com'  # For subdomain support
 
 
 # Application definition
