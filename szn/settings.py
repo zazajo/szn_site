@@ -55,7 +55,7 @@ CSRF_TRUSTED_ORIGINS = [
 
 # Security settings for production
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-SECURE_SSL_REDIRECT = True
+SECURE_SSL_REDIRECT = False
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 SECURE_BROWSER_XSS_FILTER = True
@@ -65,8 +65,8 @@ SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 
 
-CSRF_COOKIE_DOMAIN = '.sznisreal.com'  # For subdomain support
-SESSION_COOKIE_DOMAIN = '.sznisreal.com'  # For subdomain support
+# CSRF_COOKIE_DOMAIN = '.sznisreal.com'  # For subdomain support
+# SESSION_COOKIE_DOMAIN = '.sznisreal.com'  # For subdomain support
 
 
 # Application definition
