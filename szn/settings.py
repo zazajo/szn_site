@@ -176,14 +176,17 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 
 # Keep other variables for reference
 EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 465
-EMAIL_USE_SSL = True
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_USE_SSL = False
 EMAIL_HOST_USER = 'markirving012@gmail.com'
-EMAIL_HOST_PASSWORD = 'uubhkrdzercivgdh'
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = 'markirving012@gmail.com'
 RECIPIENT_EMAIL = 'markirving012@gmail.com'
+EMAIL_TIMEOUT = 30
+EMAIL_DEBUG = True
 
-# Replace these with your actual details
+# bank acct info
 BANK_NAME = 'OPAY'
 ACCOUNT_NUMBER = '9025967499'
 ACCOUNT_NAME = 'Joseph Edward'
