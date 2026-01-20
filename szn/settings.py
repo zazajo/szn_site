@@ -172,19 +172,11 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-
 # Keep other variables for reference
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_USE_SSL = False
-EMAIL_HOST_USER = 'markirving012@gmail.com'
-EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
-DEFAULT_FROM_EMAIL = 'markirving012@gmail.com'
+EMAIL_BACKEND = 'resend.django.EmailBackend'
+RESEND_API_KEY = os.environ.get('RESEND_API_KEY') 
+DEFAULT_FROM_EMAIL = 'noreply@sznisreal.com'
 RECIPIENT_EMAIL = 'markirving012@gmail.com'
-EMAIL_TIMEOUT = 30
-EMAIL_DEBUG = True
 
 # bank acct info
 BANK_NAME = 'OPAY'

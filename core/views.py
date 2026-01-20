@@ -272,11 +272,11 @@ def verify_payment(request, order_number):
     return render(request, 'verify_payment.html', context)
 
 def send_order_email_async(order, cart_items):
-    """Send order email in a separate thread."""
+    """Send order email using Resend."""
     def send_email():
         try:
             print("\n" + "="*60)
-            print("ATTEMPTING TO SEND ORDER CONFIRMATION EMAIL")
+            print("ATTEMPTING TO SEND ORDER CONFIRMATION EMAIL VIA RESEND")
             print("="*60)
             
             items_text = "\n".join([f"- {item.product.name} (Qty: {item.quantity}) - ₦{item.total_price()}" 
@@ -304,14 +304,23 @@ Payment Deadline: {order.payment_deadline.strftime('%Y-%m-%d %H:%M:%S')}
             print(f"Subject: Order Confirmation - {order.order_number}")
             print(f"Body:\n{admin_message}")
             
-            # Send to admin
-            send_mail(
-                f'Order Confirmation - {order.order_number}',
-                admin_message,
-                settings.DEFAULT_FROM_EMAIL,
-                [settings.RECIPIENT_EMAIL],
-                fail_silently=False,  # Don't fail the checkout
-            )
+            # Send to admin using Resend
+            try:
+                from django.core.mail import send_mail
+                
+                num_sent = send_mail(
+                    f'Order Confirmation - {order.order_number}',
+                    admin_message,
+                    settings.DEFAULT_FROM_EMAIL,
+                    [settings.RECIPIENT_EMAIL],
+                    fail_silently=False,
+                )
+                print(f"✅ Admin email sent via Resend. Result: {num_sent}")
+            except Exception as e:
+                print(f"❌ Admin email failed: {type(e).__name__}: {e}")
+                # Check if it's an API key issue
+                if "API key" in str(e):
+                    print("⚠️  Check your RESEND_API_KEY environment variable")
             
             # Customer message
             customer_message = f"""
@@ -332,22 +341,26 @@ Please make payment within 2 hours to secure your order.
             print(f"Subject: Order #{order.order_number} Confirmation")
             print(f"Body:\n{customer_message}")
             
-            send_mail(
-                f'Order #{order.order_number} Confirmation',
-                customer_message,
-                settings.DEFAULT_FROM_EMAIL,
-                [order.customer_email],
-                fail_silently=False,
-            )
+            try:
+                num_sent = send_mail(
+                    f'Order #{order.order_number} Confirmation',
+                    customer_message,
+                    settings.DEFAULT_FROM_EMAIL,
+                    [order.customer_email],
+                    fail_silently=False,
+                )
+                print(f"✅ Customer email sent via Resend. Result: {num_sent}")
+            except Exception as e:
+                print(f"❌ Customer email failed: {type(e).__name__}: {e}")
             
-            print("\n✓ Emails would have been sent (check console for actual content)")
             print("="*60 + "\n")
             
         except Exception as e:
-            print(f"\n✗ Email sending error (but order was saved): {str(e)}")
+            print(f"\n✗ Resend email sending error: {str(e)}")
             import traceback
             traceback.print_exc()
     
+    # Start email thread
     email_thread = threading.Thread(target=send_email)
     email_thread.start()
 
