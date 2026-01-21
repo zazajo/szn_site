@@ -213,13 +213,15 @@ def checkout(request):
                     price=cart_item.product.price
                 )
             
-            # Send emails via Resend API
-            send_order_emails_via_api(order, cart_items)
+            # ✅ Send confirmation emails via Resend API
+            send_order_confirmation(order, cart_items)
             
             # Clear the cart
             cart_items.delete()
             
-            # Redirect immediately (emails run in background)
+            # Success message
+            messages.success(request, f"Order #{order.order_number} placed successfully! Check your email.")
+            
             return redirect('payment_instructions', order_number=order.order_number)
     else:
         form = CheckoutForm()
@@ -330,175 +332,139 @@ def verify_payment(request, order_number):
     }
     return render(request, 'verify_payment.html', context)
 
-def send_order_email_async(order, cart_items):
-    """Send order email with proper threading and error handling."""
-    def send_email():
+# views.py - Add these functions
+
+def send_order_confirmation(order, cart_items):
+    """
+    Send order confirmation emails via Resend API
+    """
+    def send_emails():
         try:
-            print("\n" + "="*60)
-            print("STARTING EMAIL THREAD")
-            print("="*60)
-            
             items_text = "\n".join([f"- {item.product.name} (Qty: {item.quantity}) - ₦{item.total_price()}" 
                                    for item in cart_items])
             
-            # Admin message
+            # 1. Email to ADMIN (you)
+            admin_subject = f'💰 New Order: {order.order_number}'
             admin_message = f"""
-Order Details:
-Order Number: {order.order_number}
+🛒 NEW ORDER RECEIVED
+
+Order #: {order.order_number}
 Customer: {order.customer_name}
 Email: {order.customer_email}
 Phone: {order.customer_phone}
 Address: {order.customer_address}, {order.city}, {order.state}
 
-Items Ordered:
+📦 ITEMS ORDERED:
 {items_text}
 
-Total Amount: ₦{order.total_amount}
+💵 TOTAL: ₦{order.total_amount}
 
-Payment Deadline: {order.payment_deadline.strftime('%Y-%m-%d %H:%M:%S')}
+⏰ PAYMENT DEADLINE: {order.payment_deadline.strftime('%Y-%m-%d %H:%M:%S')}
+
+---
+Order saved in database. Contact customer for payment.
 """
             
-            print(f"\n📧 Attempting to send admin email for order {order.order_number}")
-            print(f"To: {settings.RECIPIENT_EMAIL}")
+            print(f"\n📧 Sending admin email for order {order.order_number}")
+            success, msg = send_resend_email(
+                "markirving012@gmail.com",  # Your admin email
+                admin_subject,
+                admin_message
+            )
             
-            # Send to admin
-            try:
-                # Add timeout to prevent hanging
-                import socket
-                original_timeout = socket.getdefaulttimeout()
-                socket.setdefaulttimeout(10)  # 10 second timeout
-                
-                from django.core.mail import send_mail
-                
-                num_sent = send_mail(
-                    f'Order Confirmation - {order.order_number}',
-                    admin_message,
-                    settings.DEFAULT_FROM_EMAIL,
-                    [settings.RECIPIENT_EMAIL],
-                    fail_silently=False,
-                )
-                print(f"✅ Admin email sent. Result: {num_sent}")
-                
-                socket.setdefaulttimeout(original_timeout)
-                
-            except Exception as e:
-                print(f"⚠️ Admin email warning: {type(e).__name__}: {e}")
-                # Don't raise - just log and continue
+            if success:
+                print(f"✅ Admin email sent")
+            else:
+                print(f"❌ Admin email failed: {msg}")
             
-            # Customer message
+            # 2. Email to CUSTOMER
+            customer_subject = f'✅ Order Confirmation: #{order.order_number}'
             customer_message = f"""
-Thank you for your order {order.customer_name}!
+Hi {order.customer_name},
 
-Your order #{order.order_number} has been received.
+Thank you for your order with SZN IS REAL! 🎉
 
-Order Summary:
+📋 ORDER SUMMARY:
+Order #: {order.order_number}
 {items_text}
 
-Total: ₦{order.total_amount}
+💰 TOTAL: ₦{order.total_amount}
 
+⏰ PAYMENT INSTRUCTIONS:
 Please make payment within 2 hours to secure your order.
+Payment details have been sent to our admin who will contact you shortly.
+
+📞 CONTACT:
+If you have questions, reply to this email or contact us.
+
+Thank you for shopping with us!
+SZN IS REAL Team
 """
             
-            print(f"\n📧 Attempting to send customer email for order {order.order_number}")
-            print(f"To: {order.customer_email}")
+            print(f"\n📧 Sending customer email for order {order.order_number}")
+            success, msg = send_resend_email(
+                order.customer_email,
+                customer_subject,
+                customer_message
+            )
             
-            # Send to customer
-            try:
-                import socket
-                socket.setdefaulttimeout(10)  # 10 second timeout
+            if success:
+                print(f"✅ Customer email sent")
+            else:
+                print(f"❌ Customer email failed: {msg}")
+                # Log the error but don't crash
+                print(f"Customer will need manual contact")
                 
-                num_sent = send_mail(
-                    f'Order #{order.order_number} Confirmation',
-                    customer_message,
-                    settings.DEFAULT_FROM_EMAIL,
-                    [order.customer_email],
-                    fail_silently=False,
-                )
-                print(f"✅ Customer email sent. Result: {num_sent}")
-                
-            except Exception as e:
-                print(f"⚠️ Customer email warning: {type(e).__name__}: {e}")
-            
-            print("="*60 + "\n")
-            
         except Exception as e:
-            print(f"\n🔥 Critical error in email thread: {str(e)}")
+            print(f"🔥 Error in email thread: {e}")
             import traceback
             traceback.print_exc()
     
-    # Start thread with daemon=True so it doesn't block main process
-    email_thread = threading.Thread(target=send_email, daemon=True)
+    # Start email thread
+    email_thread = threading.Thread(target=send_emails, daemon=True)
     email_thread.start()
     
-    # Also try to send sync version as fallback
-    try:
-        print("Starting fallback sync email attempt...")
-        # Quick sync attempt with timeout
-        import threading as th
-        import queue
-        
-        result_queue = queue.Queue()
-        
-        def quick_send():
-            try:
-                from django.core.mail import send_mail
-                num = send_mail(
-                    'Order Received Sync',
-                    f'Order {order.order_number} received. Check admin panel.',
-                    settings.DEFAULT_FROM_EMAIL,
-                    [settings.RECIPIENT_EMAIL],
-                    fail_silently=True,
-                )
-                result_queue.put(f"Sync result: {num}")
-            except:
-                result_queue.put("Sync failed")
-        
-        sync_thread = th.Thread(target=quick_send, daemon=True)
-        sync_thread.start()
-        sync_thread.join(timeout=5)  # Wait max 5 seconds
-        
-        if not result_queue.empty():
-            print(result_queue.get())
-        
-    except:
-        pass  # Ignore fallback errors
-    
-def send_payment_verification_email_async(order, customer_name):
-    """Send payment verification email via Resend API"""
+def send_payment_verification(order, customer_name):
+    """
+    Send payment verification email via Resend API
+    """
     def send_email():
         try:
-            subject = f'Payment Verification - Order #{order.order_number}'
+            subject = f'💳 Payment Verification - Order #{order.order_number}'
             
             message = f"""
-Payment Verification Received:
+💰 PAYMENT VERIFICATION RECEIVED
 
-Order Number: {order.order_number}
+Order #: {order.order_number}
 Customer: {customer_name}
 Email: {order.customer_email}
 Phone: {order.customer_phone}
 
-Customer claims to have made payment. Please verify the transfer and update order status.
+⚠️ Customer claims to have made payment. Please verify:
 
-Order Details:
-Amount: ₦{order.total_amount}
+1. Check bank transfer
+2. Confirm amount: ₦{order.total_amount}
+3. Update order status to "Paid"
+
 Items: {', '.join([item.product.name for item in order.orderitem_set.all()])}
+
+Once verified, contact customer and update order status.
 """
             
-            print(f"\n📧 Sending payment verification via API for order {order.order_number}")
+            print(f"\n📧 Sending payment verification for order {order.order_number}")
             success, msg = send_resend_email(
-                settings.RECIPIENT_EMAIL,
+                "markirving012@gmail.com",  # Admin email
                 subject,
                 message
             )
+            
             if success:
-                print(f"✅ {msg}")
+                print(f"✅ Payment verification sent")
             else:
-                print(f"❌ Payment verification email failed: {msg}")
+                print(f"❌ Payment verification failed: {msg}")
                 
         except Exception as e:
-            print(f"Payment verification email failed: {e}")
-            import traceback
-            traceback.print_exc()
+            print(f"Payment verification error: {e}")
     
     email_thread = threading.Thread(target=send_email, daemon=True)
     email_thread.start()
@@ -554,7 +520,8 @@ def send_resend_email(to_email, subject, text_content, html_content=None):
     """
     api_key = os.environ.get('RESEND_API_KEY')
     if not api_key:
-        return False, "RESEND_API_KEY not set"
+        print("❌ RESEND_API_KEY not set")
+        return False, "API key not set"
     
     url = "https://api.resend.com/emails"
     headers = {
@@ -562,9 +529,9 @@ def send_resend_email(to_email, subject, text_content, html_content=None):
         "Content-Type": "application/json",
     }
     
-    # AFTER DOMAIN VERIFICATION, use your domain
+    # Use your verified domain
     data = {
-        "from": "noreply@sznisreal.com",  # <-- AFTER verification
+        "from": "SZN IS REAL <noreply@sznisreal.com>",  # Verified domain
         "to": [to_email],
         "subject": subject,
         "text": text_content,
@@ -579,7 +546,47 @@ def send_resend_email(to_email, subject, text_content, html_content=None):
         if response.status_code == 200:
             return True, "Email sent"
         else:
-            return False, f"Error: {response.status_code} - {response.text[:100]}"
+            error_msg = f"Error {response.status_code}"
+            try:
+                error_data = response.json()
+                error_msg += f": {error_data.get('message', 'Unknown error')}"
+            except:
+                error_msg += f": {response.text[:100]}"
+            return False, error_msg
             
+    except requests.exceptions.Timeout:
+        return False, "Timeout - check internet connection"
     except Exception as e:
         return False, f"Error: {type(e).__name__}: {str(e)}"
+    
+def final_email_test(request):
+    """Test complete email flow"""
+    import time
+    
+    results = []
+    results.append("<h1>🎯 Final Email System Test</h1>")
+    
+    # Test 1: Admin email
+    results.append("<h2>Test 1: Admin Email</h2>")
+    success, msg = send_resend_email(
+        "markirving012@gmail.com",
+        "Final Test - Admin",
+        "This is a test email to admin. System is working! ✅"
+    )
+    results.append(f"Result: {'✅ ' if success else '❌ '} {msg}")
+    
+    # Test 2: Customer email (if domain verified)
+    results.append("<h2>Test 2: Customer Email</h2>")
+    success, msg = send_resend_email(
+        "josephedward201@gmail.com",  # Use a test customer email
+        "Final Test - Customer",
+        "This is a test email to customer. System is working! ✅"
+    )
+    results.append(f"Result: {'✅ ' if success else '❌ '} {msg}")
+    
+    if "domain" in msg.lower() or "verify" in msg.lower():
+        results.append("<h3 style='color: orange;'>⚠️  Domain Verification Needed</h3>")
+        results.append("To send to customers, verify domain at: https://resend.com/domains")
+        results.append("Add DNS records for sznisreal.com")
+    
+    return HttpResponse("<br>".join(results))
