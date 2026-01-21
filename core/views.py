@@ -20,7 +20,7 @@ import os
 
 # ==================== CONFIGURATION ====================
 # CHANGE ADMIN EMAIL HERE - only change this line
-ADMIN_EMAIL = "markirving012@gmail.com"  # <-- CHANGE THIS TO YOUR ADMIN EMAIL
+ADMIN_EMAIL = "benedictibeh279@gmail.com"  # <-- CHANGE THIS TO YOUR ADMIN EMAIL
 
 def get_cart(request):
     if request.user.is_authenticated:
