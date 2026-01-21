@@ -439,3 +439,81 @@ Items: {', '.join([item.product.name for item in order.orderitem_set.all()])}
         print(f"❌ Payment verification email failed: {type(e).__name__}: {e}")
         import traceback
         traceback.print_exc()
+
+
+# views.py
+import sys
+import os
+from django.http import HttpResponse
+
+def debug_resend(request):
+    """Debug Resend installation and configuration"""
+    results = []
+    
+    # 1. Python environment
+    results.append(f"<h2>Python Environment</h2>")
+    results.append(f"Python executable: {sys.executable}")
+    results.append(f"Python version: {sys.version}")
+    results.append(f"Current directory: {os.getcwd()}")
+    
+    # 2. Check if resend is in Python path
+    results.append(f"<h2>Python Path</h2>")
+    for path in sys.path:
+        results.append(f"{path}")
+    
+    # 3. Try to import resend
+    results.append(f"<h2>Import Test</h2>")
+    try:
+        import resend
+        results.append(f"✅ Successfully imported resend")
+        results.append(f"Resend location: {resend.__file__}")
+        if hasattr(resend, '__version__'):
+            results.append(f"Resend version: {resend.__version__}")
+    except ImportError as e:
+        results.append(f"❌ Failed to import resend: {e}")
+    
+    # 4. Check for django module
+    results.append(f"<h2>Django Module Check</h2>")
+    try:
+        import resend
+        import inspect
+        # Check what's in resend module
+        members = [name for name, _ in inspect.getmembers(resend)]
+        results.append(f"Members in resend module: {', '.join(members)}")
+        
+        # Check for django
+        if 'django' in members:
+            results.append(f"✅ 'django' found in resend module")
+            # Try to import it
+            try:
+                from resend import django
+                results.append(f"✅ Successfully imported resend.django")
+            except ImportError as e:
+                results.append(f"❌ Failed to import resend.django: {e}")
+        else:
+            results.append(f"❌ 'django' NOT found in resend module")
+    except:
+        results.append(f"Cannot check - resend not imported")
+    
+    # 5. Environment variables
+    results.append(f"<h2>Environment Variables</h2>")
+    api_key = os.environ.get('RESEND_API_KEY')
+    results.append(f"RESEND_API_KEY: {'✅ SET' if api_key else '❌ NOT SET'}")
+    if api_key:
+        results.append(f"Key starts with: {api_key[:10]}...")
+        results.append(f"Key length: {len(api_key)} characters")
+    
+    # 6. Installed packages
+    results.append(f"<h2>Package Check</h2>")
+    try:
+        import pkg_resources
+        for pkg in ['resend', 'Django', 'django-resend']:
+            try:
+                version = pkg_resources.get_distribution(pkg).version
+                results.append(f"✅ {pkg}=={version}")
+            except:
+                results.append(f"❌ {pkg} NOT INSTALLED")
+    except:
+        results.append(f"Cannot check packages")
+    
+    return HttpResponse("<br>".join(results))
