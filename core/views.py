@@ -18,6 +18,10 @@ import requests
 import json
 import os
 
+# ==================== CONFIGURATION ====================
+# CHANGE ADMIN EMAIL HERE - only change this line
+ADMIN_EMAIL = "markirving012@gmail.com"  # <-- CHANGE THIS TO YOUR ADMIN EMAIL
+
 def get_cart(request):
     if request.user.is_authenticated:
         cart, created = Cart.objects.get_or_create(user=request.user)
@@ -39,7 +43,6 @@ def home(request):
         'images/b6.JPG',
     ]
     
-    # Use stock_quantity__gt=0 instead of in_stock
     featured_products = Product.objects.filter(featured=True, stock_quantity__gt=0)[:4]
     
     context = {
@@ -51,7 +54,7 @@ def home(request):
 
 def products(request):
     category_slug = request.GET.get('category')
-    products_list = Product.objects.all()  # Show all products
+    products_list = Product.objects.all()
     
     if category_slug:
         category = get_object_or_404(Category, slug=category_slug)
@@ -69,7 +72,6 @@ def products(request):
 
 def product_detail(request, slug):
     product = get_object_or_404(Product, slug=slug)
-    # Remove the in_stock filter since we want to show the product even if out of stock
     related_products = Product.objects.filter(
         category=product.category
     ).exclude(id=product.id)[:4]
@@ -125,14 +127,12 @@ def cart(request):
 def add_to_cart(request, product_id):
     product = get_object_or_404(Product, id=product_id)
     
-    # Check if product is in stock using stock_quantity
     if product.stock_quantity <= 0:
         messages.error(request, f"Sorry, {product.name} is out of stock.")
         return redirect('products')
     
     cart = get_cart(request)
     
-    # Check if adding this item would exceed available stock
     cart_item, created = CartItem.objects.get_or_create(
         cart=cart,
         product=product,
@@ -180,159 +180,54 @@ def update_cart(request, item_id):
     
     return redirect('cart')
 
-
 def generate_order_number():
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))
 
-def checkout(request):
-    cart = get_cart(request)
-    cart_items = CartItem.objects.filter(cart=cart)
-    
-    if not cart_items:
-        messages.error(request, "Your cart is empty.")
-        return redirect('cart')
-    
-    total = sum(item.total_price() for item in cart_items)
-    
-    if request.method == 'POST':
-        form = CheckoutForm(request.POST)
-        if form.is_valid():
-            # Create order
-            order = form.save(commit=False)
-            order.order_number = generate_order_number()
-            order.total_amount = total
-            order.payment_deadline = timezone.now() + timedelta(hours=2)
-            order.save()
-            
-            # Create order items
-            for cart_item in cart_items:
-                OrderItem.objects.create(
-                    order=order,
-                    product=cart_item.product,
-                    quantity=cart_item.quantity,
-                    price=cart_item.product.price
-                )
-            
-            # ✅ Send confirmation emails via Resend API
-            send_order_confirmation(order, cart_items)
-            
-            # Clear the cart
-            cart_items.delete()
-            
-            # Success message
-            messages.success(request, f"Order #{order.order_number} placed successfully! Check your email.")
-            
-            return redirect('payment_instructions', order_number=order.order_number)
-    else:
-        form = CheckoutForm()
-    
-    context = {
-        'form': form,
-        'total': total,
-        'cart_items': cart_items,
-        'search_form': SearchForm()
-    }
-    return render(request, 'checkout.html', context)
+# ==================== EMAIL FUNCTIONS ====================
 
-def send_order_emails_via_api(order, cart_items):
+def send_resend_email(to_email, subject, text_content, html_content=None):
     """
-    TEMPORARY: Send order emails only to admin (your verified email)
+    Send email via Resend API
     """
-    def send_emails():
-        try:
-            items_text = "\n".join([f"- {item.product.name} (Qty: {item.quantity}) - ₦{item.total_price()}" 
-                                   for item in cart_items])
-            
-            # Email to admin (YOUR verified email)
-            admin_subject = f'Order Confirmation - {order.order_number}'
-            admin_message = f"""
-Order Details:
-Order Number: {order.order_number}
-Customer: {order.customer_name}
-Email: {order.customer_email}  <-- Customer's email is here
-Phone: {order.customer_phone}
-Address: {order.customer_address}, {order.city}, {order.state}
-
-Items Ordered:
-{items_text}
-
-Total Amount: ₦{order.total_amount}
-
-Payment Deadline: {order.payment_deadline.strftime('%Y-%m-%d %H:%M:%S')}
-
----
-IMPORTANT: You need to manually email the customer at: {order.customer_email}
-Customer message:
-"Thank you for your order {order.customer_name}! Your order #{order.order_number} has been received. Total: ₦{order.total_amount}"
-"""
-            
-            print(f"\n📧 Sending admin email via API for order {order.order_number}")
-            
-            # Send to YOUR verified email
-            success, msg = send_resend_email(
-                "josephedward201@gmail.com",  # <-- YOUR verified email
-                admin_subject,
-                admin_message
-            )
-            
-            if success:
-                print(f"✅ Admin email sent: {msg}")
-                print(f"⚠️  Customer {order.customer_email} needs manual email (domain not verified)")
-            else:
-                print(f"❌ Email failed: {msg}")
-                
-        except Exception as e:
-            print(f"🔥 Error in email thread: {e}")
+    api_key = os.environ.get('RESEND_API_KEY')
+    if not api_key:
+        print("❌ RESEND_API_KEY not set")
+        return False, "API key not set"
     
-    # Start in background thread
-    email_thread = threading.Thread(target=send_emails, daemon=True)
-    email_thread.start()
-
-def payment_instructions(request, order_number):
-    order = get_object_or_404(Order, order_number=order_number)
-    
-    # Calculate time remaining
-    now = timezone.now()
-    time_remaining = order.payment_deadline - now
-    hours_remaining = max(0, int(time_remaining.total_seconds() // 3600))
-    minutes_remaining = max(0, int((time_remaining.total_seconds() % 3600) // 60))
-    
-    context = {
-        'order': order,
-        'hours_remaining': hours_remaining,
-        'minutes_remaining': minutes_remaining,
-        'search_form': SearchForm()
+    url = "https://api.resend.com/emails"
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
     }
-    return render(request, 'payment_instructions.html', context)
-
-def verify_payment(request, order_number):
-    order = get_object_or_404(Order, order_number=order_number)
     
-    if request.method == 'POST':
-        form = PaymentVerificationForm(request.POST)
-        if form.is_valid():
-            customer_name = form.cleaned_data['customer_name']
-            
-            # Send payment verification email
-            send_payment_verification_email_async(order, customer_name)
-            
-            # Update order status
-            order.status = 'paid'
-            order.save()
-            
-            messages.success(request, "Payment verification received. We'll confirm your payment and process your order.")
-            return redirect('home')
-    else:
-        form = PaymentVerificationForm()
-    
-    context = {
-        'order': order,
-        'form': form,
-        'search_form': SearchForm()
+    data = {
+        "from": "SZN IS REAL <noreply@sznisreal.com>",
+        "to": [to_email],
+        "subject": subject,
+        "text": text_content,
     }
-    return render(request, 'verify_payment.html', context)
-
-# views.py - Add these functions
+    
+    if html_content:
+        data["html"] = html_content
+    
+    try:
+        response = requests.post(url, json=data, headers=headers, timeout=10)
+        
+        if response.status_code == 200:
+            return True, "Email sent"
+        else:
+            error_msg = f"Error {response.status_code}"
+            try:
+                error_data = response.json()
+                error_msg += f": {error_data.get('message', 'Unknown error')}"
+            except:
+                error_msg += f": {response.text[:100]}"
+            return False, error_msg
+            
+    except requests.exceptions.Timeout:
+        return False, "Timeout"
+    except Exception as e:
+        return False, f"Error: {type(e).__name__}: {str(e)}"
 
 def send_order_confirmation(order, cart_items):
     """
@@ -343,7 +238,7 @@ def send_order_confirmation(order, cart_items):
             items_text = "\n".join([f"- {item.product.name} (Qty: {item.quantity}) - ₦{item.total_price()}" 
                                    for item in cart_items])
             
-            # 1. Email to ADMIN (you)
+            # 1. Email to ADMIN
             admin_subject = f'💰 New Order: {order.order_number}'
             admin_message = f"""
 🛒 NEW ORDER RECEIVED
@@ -360,14 +255,11 @@ Address: {order.customer_address}, {order.city}, {order.state}
 💵 TOTAL: ₦{order.total_amount}
 
 ⏰ PAYMENT DEADLINE: {order.payment_deadline.strftime('%Y-%m-%d %H:%M:%S')}
-
----
-Order saved in database. Contact customer for payment.
 """
             
             print(f"\n📧 Sending admin email for order {order.order_number}")
             success, msg = send_resend_email(
-                "markirving012@gmail.com",  # Your admin email
+                ADMIN_EMAIL,  # Using the config variable
                 admin_subject,
                 admin_message
             )
@@ -412,8 +304,6 @@ SZN IS REAL Team
                 print(f"✅ Customer email sent")
             else:
                 print(f"❌ Customer email failed: {msg}")
-                # Log the error but don't crash
-                print(f"Customer will need manual contact")
                 
         except Exception as e:
             print(f"🔥 Error in email thread: {e}")
@@ -423,7 +313,7 @@ SZN IS REAL Team
     # Start email thread
     email_thread = threading.Thread(target=send_emails, daemon=True)
     email_thread.start()
-    
+
 def send_payment_verification(order, customer_name):
     """
     Send payment verification email via Resend API
@@ -453,7 +343,7 @@ Once verified, contact customer and update order status.
             
             print(f"\n📧 Sending payment verification for order {order.order_number}")
             success, msg = send_resend_email(
-                "markirving012@gmail.com",  # Admin email
+                ADMIN_EMAIL,  # Using the config variable
                 subject,
                 message
             )
@@ -469,6 +359,100 @@ Once verified, contact customer and update order status.
     email_thread = threading.Thread(target=send_email, daemon=True)
     email_thread.start()
 
+# ==================== VIEWS ====================
+
+def checkout(request):
+    cart = get_cart(request)
+    cart_items = CartItem.objects.filter(cart=cart)
+    
+    if not cart_items:
+        messages.error(request, "Your cart is empty.")
+        return redirect('cart')
+    
+    total = sum(item.total_price() for item in cart_items)
+    
+    if request.method == 'POST':
+        form = CheckoutForm(request.POST)
+        if form.is_valid():
+            # Create order
+            order = form.save(commit=False)
+            order.order_number = generate_order_number()
+            order.total_amount = total
+            order.payment_deadline = timezone.now() + timedelta(hours=2)
+            order.save()
+            
+            # Create order items
+            for cart_item in cart_items:
+                OrderItem.objects.create(
+                    order=order,
+                    product=cart_item.product,
+                    quantity=cart_item.quantity,
+                    price=cart_item.product.price
+                )
+            
+            # Send confirmation emails
+            send_order_confirmation(order, cart_items)
+            
+            # Clear the cart
+            cart_items.delete()
+            
+            messages.success(request, f"Order #{order.order_number} placed successfully! Check your email.")
+            return redirect('payment_instructions', order_number=order.order_number)
+    else:
+        form = CheckoutForm()
+    
+    context = {
+        'form': form,
+        'total': total,
+        'cart_items': cart_items,
+        'search_form': SearchForm()
+    }
+    return render(request, 'checkout.html', context)
+
+def payment_instructions(request, order_number):
+    order = get_object_or_404(Order, order_number=order_number)
+    
+    now = timezone.now()
+    time_remaining = order.payment_deadline - now
+    hours_remaining = max(0, int(time_remaining.total_seconds() // 3600))
+    minutes_remaining = max(0, int((time_remaining.total_seconds() % 3600) // 60))
+    
+    context = {
+        'order': order,
+        'hours_remaining': hours_remaining,
+        'minutes_remaining': minutes_remaining,
+        'search_form': SearchForm()
+    }
+    return render(request, 'payment_instructions.html', context)
+
+def verify_payment(request, order_number):
+    order = get_object_or_404(Order, order_number=order_number)
+    
+    if request.method == 'POST':
+        form = PaymentVerificationForm(request.POST)
+        if form.is_valid():
+            customer_name = form.cleaned_data['customer_name']
+            
+            # ✅ CORRECTED: Use send_payment_verification (not send_payment_verification_email_async)
+            send_payment_verification(order, customer_name)
+            
+            # Update order status
+            order.status = 'paid'
+            order.save()
+            
+            messages.success(request, "Payment verification received. We'll confirm your payment and process your order.")
+            return redirect('home')
+    else:
+        form = PaymentVerificationForm()
+    
+    context = {
+        'order': order,
+        'form': form,
+        'search_form': SearchForm()
+    }
+    return render(request, 'verify_payment.html', context)
+
+# ==================== TEST ENDPOINTS ====================
 
 def test_resend_api_direct(request):
     """Test Resend API directly"""
@@ -476,27 +460,20 @@ def test_resend_api_direct(request):
     
     results = []
     
-    # Test 1: Check API key
     api_key = os.environ.get('RESEND_API_KEY')
     results.append(f"<h2>API Key Check</h2>")
     results.append(f"API Key: {'✅ SET' if api_key else '❌ NOT SET'}")
     
-    # Test 2: Send test email TO YOUR VERIFIED EMAIL
     results.append(f"<h2>Sending Test Email</h2>")
-    
-    # Use YOUR email address that you used to sign up for Resend
-    YOUR_VERIFIED_EMAIL = "josephedward201@gmail.com"  # <-- YOUR email from the error
     
     test_subject = f"Test from Railway API - {int(time.time())}"
     test_message = f"This is a direct API test at {timezone.now()}"
     
-    results.append(f"Sending to: {YOUR_VERIFIED_EMAIL}")
-    results.append(f"From: onboarding@resend.dev")
+    results.append(f"Sending to: {ADMIN_EMAIL}")
     results.append(f"Subject: {test_subject}")
     
-    # Use the send_resend_email function
     success, message = send_resend_email(
-        YOUR_VERIFIED_EMAIL,  # <-- Send to YOUR verified email
+        ADMIN_EMAIL,
         test_subject,
         test_message
     )
@@ -504,61 +481,11 @@ def test_resend_api_direct(request):
     if success:
         results.append(f"<h3 style='color: green;'>✅ SUCCESS: {message}</h3>")
         results.append("Check your email inbox and spam folder")
-        results.append("Also check Resend dashboard: https://resend.com/emails")
     else:
         results.append(f"<h3 style='color: red;'>❌ FAILED: {message}</h3>")
     
     return HttpResponse("<br>".join(results))
 
-
-
-
-
-def send_resend_email(to_email, subject, text_content, html_content=None):
-    """
-    Send email via Resend API with verified domain
-    """
-    api_key = os.environ.get('RESEND_API_KEY')
-    if not api_key:
-        print("❌ RESEND_API_KEY not set")
-        return False, "API key not set"
-    
-    url = "https://api.resend.com/emails"
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json",
-    }
-    
-    # Use your verified domain
-    data = {
-        "from": "SZN IS REAL <noreply@sznisreal.com>",  # Verified domain
-        "to": [to_email],
-        "subject": subject,
-        "text": text_content,
-    }
-    
-    if html_content:
-        data["html"] = html_content
-    
-    try:
-        response = requests.post(url, json=data, headers=headers, timeout=10)
-        
-        if response.status_code == 200:
-            return True, "Email sent"
-        else:
-            error_msg = f"Error {response.status_code}"
-            try:
-                error_data = response.json()
-                error_msg += f": {error_data.get('message', 'Unknown error')}"
-            except:
-                error_msg += f": {response.text[:100]}"
-            return False, error_msg
-            
-    except requests.exceptions.Timeout:
-        return False, "Timeout - check internet connection"
-    except Exception as e:
-        return False, f"Error: {type(e).__name__}: {str(e)}"
-    
 def final_email_test(request):
     """Test complete email flow"""
     import time
@@ -566,27 +493,20 @@ def final_email_test(request):
     results = []
     results.append("<h1>🎯 Final Email System Test</h1>")
     
-    # Test 1: Admin email
     results.append("<h2>Test 1: Admin Email</h2>")
     success, msg = send_resend_email(
-        "markirving012@gmail.com",
+        ADMIN_EMAIL,
         "Final Test - Admin",
         "This is a test email to admin. System is working! ✅"
     )
     results.append(f"Result: {'✅ ' if success else '❌ '} {msg}")
     
-    # Test 2: Customer email (if domain verified)
     results.append("<h2>Test 2: Customer Email</h2>")
     success, msg = send_resend_email(
-        "josephedward201@gmail.com",  # Use a test customer email
+        "josephedward201@gmail.com",
         "Final Test - Customer",
         "This is a test email to customer. System is working! ✅"
     )
     results.append(f"Result: {'✅ ' if success else '❌ '} {msg}")
-    
-    if "domain" in msg.lower() or "verify" in msg.lower():
-        results.append("<h3 style='color: orange;'>⚠️  Domain Verification Needed</h3>")
-        results.append("To send to customers, verify domain at: https://resend.com/domains")
-        results.append("Add DNS records for sznisreal.com")
     
     return HttpResponse("<br>".join(results))
