@@ -442,78 +442,51 @@ Items: {', '.join([item.product.name for item in order.orderitem_set.all()])}
 
 
 # views.py
-import sys
-import os
+from django.core.mail import send_mail
 from django.http import HttpResponse
+import os
 
-def debug_resend(request):
-    """Debug Resend installation and configuration"""
+def test_resend_smtp(request):
+    """Test Resend SMTP configuration"""
     results = []
     
-    # 1. Python environment
-    results.append(f"<h2>Python Environment</h2>")
-    results.append(f"Python executable: {sys.executable}")
-    results.append(f"Python version: {sys.version}")
-    results.append(f"Current directory: {os.getcwd()}")
+    # Check config
+    from django.conf import settings
+    results.append("<h2>Current Email Configuration</h2>")
+    results.append(f"EMAIL_BACKEND: {settings.EMAIL_BACKEND}")
+    results.append(f"EMAIL_HOST: {settings.EMAIL_HOST}")
+    results.append(f"EMAIL_PORT: {settings.EMAIL_PORT}")
+    results.append(f"EMAIL_USE_TLS: {settings.EMAIL_USE_TLS}")
+    results.append(f"EMAIL_HOST_USER: {settings.EMAIL_HOST_USER}")
     
-    # 2. Check if resend is in Python path
-    results.append(f"<h2>Python Path</h2>")
-    for path in sys.path:
-        results.append(f"{path}")
-    
-    # 3. Try to import resend
-    results.append(f"<h2>Import Test</h2>")
-    try:
-        import resend
-        results.append(f"✅ Successfully imported resend")
-        results.append(f"Resend location: {resend.__file__}")
-        if hasattr(resend, '__version__'):
-            results.append(f"Resend version: {resend.__version__}")
-    except ImportError as e:
-        results.append(f"❌ Failed to import resend: {e}")
-    
-    # 4. Check for django module
-    results.append(f"<h2>Django Module Check</h2>")
-    try:
-        import resend
-        import inspect
-        # Check what's in resend module
-        members = [name for name, _ in inspect.getmembers(resend)]
-        results.append(f"Members in resend module: {', '.join(members)}")
-        
-        # Check for django
-        if 'django' in members:
-            results.append(f"✅ 'django' found in resend module")
-            # Try to import it
-            try:
-                from resend import django
-                results.append(f"✅ Successfully imported resend.django")
-            except ImportError as e:
-                results.append(f"❌ Failed to import resend.django: {e}")
-        else:
-            results.append(f"❌ 'django' NOT found in resend module")
-    except:
-        results.append(f"Cannot check - resend not imported")
-    
-    # 5. Environment variables
-    results.append(f"<h2>Environment Variables</h2>")
     api_key = os.environ.get('RESEND_API_KEY')
     results.append(f"RESEND_API_KEY: {'✅ SET' if api_key else '❌ NOT SET'}")
     if api_key:
-        results.append(f"Key starts with: {api_key[:10]}...")
-        results.append(f"Key length: {len(api_key)} characters")
+        results.append(f"Key: {api_key[:10]}...")
     
-    # 6. Installed packages
-    results.append(f"<h2>Package Check</h2>")
+    # Try to send email
+    results.append("<h2>Test Email</h2>")
     try:
-        import pkg_resources
-        for pkg in ['resend', 'Django', 'django-resend']:
-            try:
-                version = pkg_resources.get_distribution(pkg).version
-                results.append(f"✅ {pkg}=={version}")
-            except:
-                results.append(f"❌ {pkg} NOT INSTALLED")
-    except:
-        results.append(f"Cannot check packages")
+        num_sent = send_mail(
+            'Test from Resend SMTP',
+            f'This is a test email sent via Resend SMTP.\n\nTime: {timezone.now()}',
+            settings.DEFAULT_FROM_EMAIL,
+            ['markirving012@gmail.com'],  # Send to yourself
+            fail_silently=False,  # Show errors
+        )
+        results.append(f"✅ Email sent successfully! Return value: {num_sent}")
+        results.append("Check your email inbox (and spam folder)")
+        
+    except Exception as e:
+        results.append(f"❌ Error: {type(e).__name__}")
+        results.append(f"Details: {str(e)}")
+        
+        # Common errors and fixes
+        if "authentication" in str(e).lower():
+            results.append("<h3>Fix: Make sure your RESEND_API_KEY is correct</h3>")
+        elif "connection refused" in str(e).lower():
+            results.append("<h3>Fix: Railway might be blocking port 587. Try port 465 with SSL</h3>")
+        elif "timeout" in str(e).lower():
+            results.append("<h3>Fix: Increase EMAIL_TIMEOUT in settings</h3>")
     
     return HttpResponse("<br>".join(results))

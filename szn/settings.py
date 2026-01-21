@@ -181,13 +181,12 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'resend'
 EMAIL_HOST_PASSWORD = os.environ.get('RESEND_API_KEY') 
-DEFAULT_FROM_EMAIL = 'noreply@sznisreal.com'
+DEFAULT_FROM_EMAIL = 'onboarding@resend.dev'
 RECIPIENT_EMAIL = 'markirving012@gmail.com'
+EMAIL_TIMEOUT = 30  # Important: Add timeout
 
 # bank acct info
 BANK_NAME = 'OPAY'
 ACCOUNT_NUMBER = '9025967499'
 ACCOUNT_NAME = 'Joseph Edward'
 ADMIN_EMAIL = 'markirving012@gmail.com'
-
-
