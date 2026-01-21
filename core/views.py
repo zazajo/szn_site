@@ -13,6 +13,10 @@ import string
 from .models import Order, OrderItem
 from .forms import CheckoutForm, PaymentVerificationForm
 import threading
+from django.http import HttpResponse
+import requests
+import json
+import os
 
 def get_cart(request):
     if request.user.is_authenticated:
@@ -551,7 +555,6 @@ def test_resend_api_direct(request):
         # Additional debugging
         results.append("\nDebug info:")
         try:
-            import requests
             # Try a simple GET to see if we can reach Resend at all
             test_response = requests.get("https://api.resend.com/", timeout=5)
             results.append(f"Can reach Resend API: Status {test_response.status_code}")
@@ -561,10 +564,8 @@ def test_resend_api_direct(request):
     return HttpResponse("<br>".join(results))
 
 
-import requests
-import json
-import os
-from django.conf import settings
+
+
 
 def send_resend_email(to_email, subject, text_content, html_content=None):
     """
