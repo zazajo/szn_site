@@ -234,21 +234,20 @@ def checkout(request):
 
 def send_order_emails_via_api(order, cart_items):
     """
-    Send order confirmation emails via Resend HTTP API
-    Runs in background thread
+    TEMPORARY: Send order emails only to admin (your verified email)
     """
     def send_emails():
         try:
             items_text = "\n".join([f"- {item.product.name} (Qty: {item.quantity}) - ₦{item.total_price()}" 
                                    for item in cart_items])
             
-            # Email to admin
+            # Email to admin (YOUR verified email)
             admin_subject = f'Order Confirmation - {order.order_number}'
             admin_message = f"""
 Order Details:
 Order Number: {order.order_number}
 Customer: {order.customer_name}
-Email: {order.customer_email}
+Email: {order.customer_email}  <-- Customer's email is here
 Phone: {order.customer_phone}
 Address: {order.customer_address}, {order.city}, {order.state}
 
@@ -258,47 +257,30 @@ Items Ordered:
 Total Amount: ₦{order.total_amount}
 
 Payment Deadline: {order.payment_deadline.strftime('%Y-%m-%d %H:%M:%S')}
+
+---
+IMPORTANT: You need to manually email the customer at: {order.customer_email}
+Customer message:
+"Thank you for your order {order.customer_name}! Your order #{order.order_number} has been received. Total: ₦{order.total_amount}"
 """
+            
             print(f"\n📧 Sending admin email via API for order {order.order_number}")
+            
+            # Send to YOUR verified email
             success, msg = send_resend_email(
-                settings.RECIPIENT_EMAIL,
+                "josephedward201@gmail.com",  # <-- YOUR verified email
                 admin_subject,
                 admin_message
             )
-            if success:
-                print(f"✅ {msg}")
-            else:
-                print(f"❌ Admin email failed: {msg}")
             
-            # Email to customer
-            customer_subject = f'Order #{order.order_number} Confirmation'
-            customer_message = f"""
-Thank you for your order {order.customer_name}!
-
-Your order #{order.order_number} has been received.
-
-Order Summary:
-{items_text}
-
-Total: ₦{order.total_amount}
-
-Please make payment within 2 hours to secure your order.
-"""
-            print(f"\n📧 Sending customer email via API for order {order.order_number}")
-            success, msg = send_resend_email(
-                order.customer_email,
-                customer_subject,
-                customer_message
-            )
             if success:
-                print(f"✅ {msg}")
+                print(f"✅ Admin email sent: {msg}")
+                print(f"⚠️  Customer {order.customer_email} needs manual email (domain not verified)")
             else:
-                print(f"❌ Customer email failed: {msg}")
+                print(f"❌ Email failed: {msg}")
                 
         except Exception as e:
             print(f"🔥 Error in email thread: {e}")
-            import traceback
-            traceback.print_exc()
     
     # Start in background thread
     email_thread = threading.Thread(target=send_emails, daemon=True)
@@ -530,36 +512,35 @@ def test_resend_api_direct(request):
     
     # Test 1: Check API key
     api_key = os.environ.get('RESEND_API_KEY')
+    results.append(f"<h2>API Key Check</h2>")
     results.append(f"API Key: {'✅ SET' if api_key else '❌ NOT SET'}")
-    if api_key:
-        results.append(f"Key starts with: {api_key[:10]}...")
     
-    # Test 2: Send test email
-    test_subject = f"Test from Railway API - {time.time()}"
+    # Test 2: Send test email TO YOUR VERIFIED EMAIL
+    results.append(f"<h2>Sending Test Email</h2>")
+    
+    # Use YOUR email address that you used to sign up for Resend
+    YOUR_VERIFIED_EMAIL = "josephedward201@gmail.com"  # <-- YOUR email from the error
+    
+    test_subject = f"Test from Railway API - {int(time.time())}"
     test_message = f"This is a direct API test at {timezone.now()}"
     
-    results.append(f"\nSending test email to: markirving012@gmail.com")
+    results.append(f"Sending to: {YOUR_VERIFIED_EMAIL}")
+    results.append(f"From: onboarding@resend.dev")
+    results.append(f"Subject: {test_subject}")
     
+    # Use the send_resend_email function
     success, message = send_resend_email(
-        'markirving012@gmail.com',
+        YOUR_VERIFIED_EMAIL,  # <-- Send to YOUR verified email
         test_subject,
         test_message
     )
     
     if success:
-        results.append(f"✅ {message}")
-        results.append("Check your email inbox and Resend dashboard")
+        results.append(f"<h3 style='color: green;'>✅ SUCCESS: {message}</h3>")
+        results.append("Check your email inbox and spam folder")
+        results.append("Also check Resend dashboard: https://resend.com/emails")
     else:
-        results.append(f"❌ {message}")
-        
-        # Additional debugging
-        results.append("\nDebug info:")
-        try:
-            # Try a simple GET to see if we can reach Resend at all
-            test_response = requests.get("https://api.resend.com/", timeout=5)
-            results.append(f"Can reach Resend API: Status {test_response.status_code}")
-        except Exception as e:
-            results.append(f"Cannot reach Resend API: {e}")
+        results.append(f"<h3 style='color: red;'>❌ FAILED: {message}</h3>")
     
     return HttpResponse("<br>".join(results))
 
@@ -569,8 +550,7 @@ def test_resend_api_direct(request):
 
 def send_resend_email(to_email, subject, text_content, html_content=None):
     """
-    Send email directly via Resend HTTP API (bypasses SMTP blocking)
-    Returns: (success, message)
+    Send email via Resend API with verified domain
     """
     api_key = os.environ.get('RESEND_API_KEY')
     if not api_key:
@@ -582,8 +562,9 @@ def send_resend_email(to_email, subject, text_content, html_content=None):
         "Content-Type": "application/json",
     }
     
+    # AFTER DOMAIN VERIFICATION, use your domain
     data = {
-        "from": "onboarding@resend.dev",  # Or your verified domain
+        "from": "noreply@sznisreal.com",  # <-- AFTER verification
         "to": [to_email],
         "subject": subject,
         "text": text_content,
@@ -596,20 +577,9 @@ def send_resend_email(to_email, subject, text_content, html_content=None):
         response = requests.post(url, json=data, headers=headers, timeout=10)
         
         if response.status_code == 200:
-            email_id = response.json().get('id')
-            return True, f"Email sent (ID: {email_id})"
+            return True, "Email sent"
         else:
-            error_msg = f"Resend API Error: {response.status_code}"
-            try:
-                error_detail = response.json()
-                error_msg += f" - {error_detail}"
-            except:
-                error_msg += f" - {response.text}"
-            return False, error_msg
+            return False, f"Error: {response.status_code} - {response.text[:100]}"
             
-    except requests.exceptions.Timeout:
-        return False, "Timeout connecting to Resend API"
-    except requests.exceptions.ConnectionError:
-        return False, "Connection error to Resend API"
     except Exception as e:
         return False, f"Error: {type(e).__name__}: {str(e)}"
