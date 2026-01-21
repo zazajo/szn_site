@@ -14,5 +14,5 @@ urlpatterns = [
     path('checkout/', views.checkout, name='checkout'),
     path('payment-instructions/<str:order_number>/', views.payment_instructions, name='payment_instructions'),
     path('verify-payment/<str:order_number>/', views.verify_payment, name='verify_payment'),
-    path('test-resend-smtp/', views.test_resend_smtp, name='test_resend_smtp'),
+    path('test-resend-api/', views.test_resend_api_direct, name='test_resend_api'),
 ]

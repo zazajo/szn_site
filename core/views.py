@@ -209,12 +209,13 @@ def checkout(request):
                     price=cart_item.product.price
                 )
             
-            # Send order confirmation email
-            send_order_email_async(order, cart_items)
+            # Send emails via Resend API
+            send_order_emails_via_api(order, cart_items)
             
             # Clear the cart
             cart_items.delete()
             
+            # Redirect immediately (emails run in background)
             return redirect('payment_instructions', order_number=order.order_number)
     else:
         form = CheckoutForm()
@@ -226,6 +227,78 @@ def checkout(request):
         'search_form': SearchForm()
     }
     return render(request, 'checkout.html', context)
+
+def send_order_emails_via_api(order, cart_items):
+    """
+    Send order confirmation emails via Resend HTTP API
+    Runs in background thread
+    """
+    def send_emails():
+        try:
+            items_text = "\n".join([f"- {item.product.name} (Qty: {item.quantity}) - ₦{item.total_price()}" 
+                                   for item in cart_items])
+            
+            # Email to admin
+            admin_subject = f'Order Confirmation - {order.order_number}'
+            admin_message = f"""
+Order Details:
+Order Number: {order.order_number}
+Customer: {order.customer_name}
+Email: {order.customer_email}
+Phone: {order.customer_phone}
+Address: {order.customer_address}, {order.city}, {order.state}
+
+Items Ordered:
+{items_text}
+
+Total Amount: ₦{order.total_amount}
+
+Payment Deadline: {order.payment_deadline.strftime('%Y-%m-%d %H:%M:%S')}
+"""
+            print(f"\n📧 Sending admin email via API for order {order.order_number}")
+            success, msg = send_resend_email(
+                settings.RECIPIENT_EMAIL,
+                admin_subject,
+                admin_message
+            )
+            if success:
+                print(f"✅ {msg}")
+            else:
+                print(f"❌ Admin email failed: {msg}")
+            
+            # Email to customer
+            customer_subject = f'Order #{order.order_number} Confirmation'
+            customer_message = f"""
+Thank you for your order {order.customer_name}!
+
+Your order #{order.order_number} has been received.
+
+Order Summary:
+{items_text}
+
+Total: ₦{order.total_amount}
+
+Please make payment within 2 hours to secure your order.
+"""
+            print(f"\n📧 Sending customer email via API for order {order.order_number}")
+            success, msg = send_resend_email(
+                order.customer_email,
+                customer_subject,
+                customer_message
+            )
+            if success:
+                print(f"✅ {msg}")
+            else:
+                print(f"❌ Customer email failed: {msg}")
+                
+        except Exception as e:
+            print(f"🔥 Error in email thread: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    # Start in background thread
+    email_thread = threading.Thread(target=send_emails, daemon=True)
+    email_thread.start()
 
 def payment_instructions(request, order_number):
     order = get_object_or_404(Order, order_number=order_number)
@@ -405,10 +478,12 @@ Please make payment within 2 hours to secure your order.
         pass  # Ignore fallback errors
     
 def send_payment_verification_email_async(order, customer_name):
-    """Send payment verification email WITHOUT threading."""
-    print(f"\n📧 Sending payment verification email for order {order.order_number}")
-    
-    message = f"""
+    """Send payment verification email via Resend API"""
+    def send_email():
+        try:
+            subject = f'Payment Verification - Order #{order.order_number}'
+            
+            message = f"""
 Payment Verification Received:
 
 Order Number: {order.order_number}
@@ -422,71 +497,118 @@ Order Details:
 Amount: ₦{order.total_amount}
 Items: {', '.join([item.product.name for item in order.orderitem_set.all()])}
 """
+            
+            print(f"\n📧 Sending payment verification via API for order {order.order_number}")
+            success, msg = send_resend_email(
+                settings.RECIPIENT_EMAIL,
+                subject,
+                message
+            )
+            if success:
+                print(f"✅ {msg}")
+            else:
+                print(f"❌ Payment verification email failed: {msg}")
+                
+        except Exception as e:
+            print(f"Payment verification email failed: {e}")
+            import traceback
+            traceback.print_exc()
     
-    try:
-        from django.core.mail import send_mail
-        
-        num_sent = send_mail(
-            f'Payment Verification - Order #{order.order_number}',
-            message,
-            settings.DEFAULT_FROM_EMAIL,
-            [settings.RECIPIENT_EMAIL],
-            fail_silently=False,
-        )
-        print(f"✅ Payment verification email sent: {num_sent}")
-        
-    except Exception as e:
-        print(f"❌ Payment verification email failed: {type(e).__name__}: {e}")
-        import traceback
-        traceback.print_exc()
+    email_thread = threading.Thread(target=send_email, daemon=True)
+    email_thread.start()
 
 
-# views.py
-from django.core.mail import send_mail
-from django.http import HttpResponse
-import os
-
-def test_resend_smtp(request):
-    """Test Resend SMTP configuration"""
+def test_resend_api_direct(request):
+    """Test Resend API directly"""
+    import time
+    
     results = []
     
-    # Check config
-    from django.conf import settings
-    results.append("<h2>Current Email Configuration</h2>")
-    results.append(f"EMAIL_BACKEND: {settings.EMAIL_BACKEND}")
-    results.append(f"EMAIL_HOST: {settings.EMAIL_HOST}")
-    results.append(f"EMAIL_PORT: {settings.EMAIL_PORT}")
-    results.append(f"EMAIL_USE_TLS: {settings.EMAIL_USE_TLS}")
-    results.append(f"EMAIL_HOST_USER: {settings.EMAIL_HOST_USER}")
-    
+    # Test 1: Check API key
     api_key = os.environ.get('RESEND_API_KEY')
-    results.append(f"RESEND_API_KEY: {'✅ SET' if api_key else '❌ NOT SET'}")
+    results.append(f"API Key: {'✅ SET' if api_key else '❌ NOT SET'}")
     if api_key:
-        results.append(f"Key: {api_key[:10]}...")
+        results.append(f"Key starts with: {api_key[:10]}...")
     
-    # Try to send email
-    results.append("<h2>Test Email</h2>")
-    try:
-        num_sent = send_mail(
-            'Test from Resend SMTP',
-            f'This is a test email sent via Resend SMTP.\n\nTime: {timezone.now()}',
-            settings.DEFAULT_FROM_EMAIL,
-            ['markirving012@gmail.com'],  # Send to yourself
-            fail_silently=False,  # Show errors
-        )
-        results.append(f"✅ Email sent successfully! Return value: {num_sent}")
-        results.append("Check your email inbox (and spam folder)")
+    # Test 2: Send test email
+    test_subject = f"Test from Railway API - {time.time()}"
+    test_message = f"This is a direct API test at {timezone.now()}"
+    
+    results.append(f"\nSending test email to: markirving012@gmail.com")
+    
+    success, message = send_resend_email(
+        'markirving012@gmail.com',
+        test_subject,
+        test_message
+    )
+    
+    if success:
+        results.append(f"✅ {message}")
+        results.append("Check your email inbox and Resend dashboard")
+    else:
+        results.append(f"❌ {message}")
         
-    except Exception as e:
-        results.append(f"❌ Error: {type(e).__name__}")
-        results.append(f"Details: {str(e)}")
-        
-        # Common errors and fixes
-        if "authentication" in str(e).lower():
-            results.append("<h3>Fix: Make sure your RESEND_API_KEY is correct</h3>")
-        elif "connection refused" in str(e).lower():
-            results.append("<h3>Fix: Railway might be blocking port 587. Try port 465 with SSL</h3>")
-        elif "timeout" in str(e).lower():
-            results.append("<h3>Fix: Increase EMAIL_TIMEOUT in settings</h3>")
+        # Additional debugging
+        results.append("\nDebug info:")
+        try:
+            import requests
+            # Try a simple GET to see if we can reach Resend at all
+            test_response = requests.get("https://api.resend.com/", timeout=5)
+            results.append(f"Can reach Resend API: Status {test_response.status_code}")
+        except Exception as e:
+            results.append(f"Cannot reach Resend API: {e}")
     
     return HttpResponse("<br>".join(results))
+
+
+import requests
+import json
+import os
+from django.conf import settings
+
+def send_resend_email(to_email, subject, text_content, html_content=None):
+    """
+    Send email directly via Resend HTTP API (bypasses SMTP blocking)
+    Returns: (success, message)
+    """
+    api_key = os.environ.get('RESEND_API_KEY')
+    if not api_key:
+        return False, "RESEND_API_KEY not set"
+    
+    url = "https://api.resend.com/emails"
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+    }
+    
+    data = {
+        "from": "onboarding@resend.dev",  # Or your verified domain
+        "to": [to_email],
+        "subject": subject,
+        "text": text_content,
+    }
+    
+    if html_content:
+        data["html"] = html_content
+    
+    try:
+        response = requests.post(url, json=data, headers=headers, timeout=10)
+        
+        if response.status_code == 200:
+            email_id = response.json().get('id')
+            return True, f"Email sent (ID: {email_id})"
+        else:
+            error_msg = f"Resend API Error: {response.status_code}"
+            try:
+                error_detail = response.json()
+                error_msg += f" - {error_detail}"
+            except:
+                error_msg += f" - {response.text}"
+            return False, error_msg
+            
+    except requests.exceptions.Timeout:
+        return False, "Timeout connecting to Resend API"
+    except requests.exceptions.ConnectionError:
+        return False, "Connection error to Resend API"
+    except Exception as e:
+        return False, f"Error: {type(e).__name__}: {str(e)}"
