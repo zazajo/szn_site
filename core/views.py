@@ -272,16 +272,18 @@ def verify_payment(request, order_number):
     return render(request, 'verify_payment.html', context)
 
 def send_order_email_async(order, cart_items):
-    """Send order email WITHOUT threading - synchronous version."""
-    print("\n" + "="*60)
-    print("ACTUALLY SENDING ORDER CONFIRMATION EMAIL")
-    print("="*60)
-    
-    items_text = "\n".join([f"- {item.product.name} (Qty: {item.quantity}) - ₦{item.total_price()}" 
-                           for item in cart_items])
-    
-    # Admin message
-    admin_message = f"""
+    """Send order email with proper threading and error handling."""
+    def send_email():
+        try:
+            print("\n" + "="*60)
+            print("STARTING EMAIL THREAD")
+            print("="*60)
+            
+            items_text = "\n".join([f"- {item.product.name} (Qty: {item.quantity}) - ₦{item.total_price()}" 
+                                   for item in cart_items])
+            
+            # Admin message
+            admin_message = f"""
 Order Details:
 Order Number: {order.order_number}
 Customer: {order.customer_name}
@@ -296,40 +298,36 @@ Total Amount: ₦{order.total_amount}
 
 Payment Deadline: {order.payment_deadline.strftime('%Y-%m-%d %H:%M:%S')}
 """
-    
-    print("\nSENDING EMAIL TO ADMIN:")
-    print(f"To: {settings.RECIPIENT_EMAIL}")
-    print(f"Subject: Order Confirmation - {order.order_number}")
-    
-    # Send to admin - SYNC VERSION
-    try:
-        from django.core.mail import send_mail
-        
-        print("📧 Attempting to send admin email...")
-        num_sent = send_mail(
-            f'Order Confirmation - {order.order_number}',
-            admin_message,
-            settings.DEFAULT_FROM_EMAIL,
-            [settings.RECIPIENT_EMAIL],
-            fail_silently=False,  # Don't fail silently - show errors!
-        )
-        print(f"✅ Admin email sent. Result: {num_sent}")
-        
-        # Log to file for debugging
-        with open('/tmp/email_debug.log', 'a') as f:
-            f.write(f"\n{timezone.now()} - Admin email sent for order {order.order_number}\n")
             
-    except Exception as e:
-        print(f"❌ Admin email FAILED: {type(e).__name__}: {e}")
-        import traceback
-        traceback.print_exc()
-        
-        # Save error to file
-        with open('/tmp/email_errors.log', 'a') as f:
-            f.write(f"\n{timezone.now()} - Error: {e}\n")
-    
-    # Customer message
-    customer_message = f"""
+            print(f"\n📧 Attempting to send admin email for order {order.order_number}")
+            print(f"To: {settings.RECIPIENT_EMAIL}")
+            
+            # Send to admin
+            try:
+                # Add timeout to prevent hanging
+                import socket
+                original_timeout = socket.getdefaulttimeout()
+                socket.setdefaulttimeout(10)  # 10 second timeout
+                
+                from django.core.mail import send_mail
+                
+                num_sent = send_mail(
+                    f'Order Confirmation - {order.order_number}',
+                    admin_message,
+                    settings.DEFAULT_FROM_EMAIL,
+                    [settings.RECIPIENT_EMAIL],
+                    fail_silently=False,
+                )
+                print(f"✅ Admin email sent. Result: {num_sent}")
+                
+                socket.setdefaulttimeout(original_timeout)
+                
+            except Exception as e:
+                print(f"⚠️ Admin email warning: {type(e).__name__}: {e}")
+                # Don't raise - just log and continue
+            
+            # Customer message
+            customer_message = f"""
 Thank you for your order {order.customer_name}!
 
 Your order #{order.order_number} has been received.
@@ -341,36 +339,71 @@ Total: ₦{order.total_amount}
 
 Please make payment within 2 hours to secure your order.
 """
-    
-    print("\nSENDING EMAIL TO CUSTOMER:")
-    print(f"To: {order.customer_email}")
-    print(f"Subject: Order #{order.order_number} Confirmation")
-    
-    # Send to customer - SYNC VERSION
-    try:
-        print("📧 Attempting to send customer email...")
-        num_sent = send_mail(
-            f'Order #{order.order_number} Confirmation',
-            customer_message,
-            settings.DEFAULT_FROM_EMAIL,
-            [order.customer_email],
-            fail_silently=False,  # Don't fail silently - show errors!
-        )
-        print(f"✅ Customer email sent. Result: {num_sent}")
-        
-        with open('/tmp/email_debug.log', 'a') as f:
-            f.write(f"{timezone.now()} - Customer email sent for order {order.order_number}\n")
             
-    except Exception as e:
-        print(f"❌ Customer email FAILED: {type(e).__name__}: {e}")
-        import traceback
-        traceback.print_exc()
-        
-        with open('/tmp/email_errors.log', 'a') as f:
-            f.write(f"{timezone.now()} - Customer email error: {e}\n")
+            print(f"\n📧 Attempting to send customer email for order {order.order_number}")
+            print(f"To: {order.customer_email}")
+            
+            # Send to customer
+            try:
+                import socket
+                socket.setdefaulttimeout(10)  # 10 second timeout
+                
+                num_sent = send_mail(
+                    f'Order #{order.order_number} Confirmation',
+                    customer_message,
+                    settings.DEFAULT_FROM_EMAIL,
+                    [order.customer_email],
+                    fail_silently=False,
+                )
+                print(f"✅ Customer email sent. Result: {num_sent}")
+                
+            except Exception as e:
+                print(f"⚠️ Customer email warning: {type(e).__name__}: {e}")
+            
+            print("="*60 + "\n")
+            
+        except Exception as e:
+            print(f"\n🔥 Critical error in email thread: {str(e)}")
+            import traceback
+            traceback.print_exc()
     
-    print("="*60 + "\n")
-
+    # Start thread with daemon=True so it doesn't block main process
+    email_thread = threading.Thread(target=send_email, daemon=True)
+    email_thread.start()
+    
+    # Also try to send sync version as fallback
+    try:
+        print("Starting fallback sync email attempt...")
+        # Quick sync attempt with timeout
+        import threading as th
+        import queue
+        
+        result_queue = queue.Queue()
+        
+        def quick_send():
+            try:
+                from django.core.mail import send_mail
+                num = send_mail(
+                    'Order Received Sync',
+                    f'Order {order.order_number} received. Check admin panel.',
+                    settings.DEFAULT_FROM_EMAIL,
+                    [settings.RECIPIENT_EMAIL],
+                    fail_silently=True,
+                )
+                result_queue.put(f"Sync result: {num}")
+            except:
+                result_queue.put("Sync failed")
+        
+        sync_thread = th.Thread(target=quick_send, daemon=True)
+        sync_thread.start()
+        sync_thread.join(timeout=5)  # Wait max 5 seconds
+        
+        if not result_queue.empty():
+            print(result_queue.get())
+        
+    except:
+        pass  # Ignore fallback errors
+    
 def send_payment_verification_email_async(order, customer_name):
     """Send payment verification email WITHOUT threading."""
     print(f"\n📧 Sending payment verification email for order {order.order_number}")
