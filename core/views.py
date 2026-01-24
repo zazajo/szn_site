@@ -29,6 +29,7 @@ def get_cart(request):
         session_key = request.session.session_key
         if not session_key:
             request.session.create()
+            request.session.save() # Ensure session is saved
             session_key = request.session.session_key
         cart, created = Cart.objects.get_or_create(session_key=session_key)
     return cart
@@ -140,16 +141,13 @@ def add_to_cart(request, product_id):
     )
     
     if not created:
+        # Item already exists in cart, increase quantity
         if cart_item.quantity + 1 > product.stock_quantity:
             messages.error(request, f"Only {product.stock_quantity} items of {product.name} available.")
             return redirect('cart')
         cart_item.quantity += 1
         cart_item.save()
-    else:
-        if cart_item.quantity > product.stock_quantity:
-            messages.error(request, f"Only {product.stock_quantity} items of {product.name} available.")
-            cart_item.delete()
-            return redirect('cart')
+    # Remove the else block that was deleting items!
     
     messages.success(request, f"Added {product.name} to cart.")
     return redirect('cart')

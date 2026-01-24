@@ -37,7 +37,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-^2kjj@qm+szgqs@ozo8&_1rqobpo8ttzq1%o4$3ue-t379_mu8'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 # Your production domain
 ALLOWED_HOSTS = [
@@ -94,6 +94,10 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'szn.urls'
+
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+SESSION_COOKIE_SECURE = True  # Set to True only if using HTTPS
+SESSION_SAVE_EVERY_REQUEST = True  # ← Add this to ensure sessions are saved
 
 TEMPLATES = [
     {
