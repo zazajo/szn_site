@@ -18,6 +18,8 @@ from decouple import config
 import ssl
 import certifi
 
+IS_RAILWAY = os.environ.get('RAILWAY_ENVIRONMENT') is not None
+
 
 
 
@@ -57,9 +59,9 @@ CSRF_TRUSTED_ORIGINS = [
 
 # Security settings for production
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-SECURE_SSL_REDIRECT = False
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
+SECURE_SSL_REDIRECT = IS_RAILWAY
+SESSION_COOKIE_SECURE = IS_RAILWAY
+CSRF_COOKIE_SECURE = IS_RAILWAY
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_HSTS_SECONDS = 31536000  # 1 year
@@ -96,8 +98,10 @@ MIDDLEWARE = [
 ROOT_URLCONF = 'szn.urls'
 
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
-SESSION_COOKIE_SECURE = True  # Set to True only if using HTTPS
 SESSION_SAVE_EVERY_REQUEST = True  # ← Add this to ensure sessions are saved
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_AGE = 1209600
 
 TEMPLATES = [
     {
