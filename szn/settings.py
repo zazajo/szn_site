@@ -18,9 +18,6 @@ from decouple import config
 import ssl
 import certifi
 
-
-
-
 env = environ.Env()
 environ.Env.read_env()
 
@@ -37,7 +34,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-^2kjj@qm+szgqs@ozo8&_1rqobpo8ttzq1%o4$3ue-t379_mu8'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 # Your production domain
 ALLOWED_HOSTS = [
@@ -177,19 +174,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Keep other variables for reference
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.resend.com'
-EMAIL_PORT = 2525
-EMAIL_USE_TLS = True
-EMAIL_USE_SSL = False
-EMAIL_HOST_USER = 'resend'
-EMAIL_HOST_PASSWORD = os.environ.get('RESEND_API_KEY') 
-DEFAULT_FROM_EMAIL = 'onboarding@resend.dev'
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend' 
+DEFAULT_FROM_EMAIL = 'noreply@sznisreal.com'
 RECIPIENT_EMAIL = 'markirving012@gmail.com'
 EMAIL_TIMEOUT = 30  # Important: Add timeout
-
-# bank acct info
-BANK_NAME = 'OPAY'
-ACCOUNT_NUMBER = '9025967499'
-ACCOUNT_NAME = 'Joseph Edward'
-ADMIN_EMAIL = 'markirving012@gmail.com'
