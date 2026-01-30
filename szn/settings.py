@@ -174,7 +174,5 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Keep other variables for reference
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend' 
-DEFAULT_FROM_EMAIL = 'noreply@sznisreal.com'
-RECIPIENT_EMAIL = 'markirving012@gmail.com'
-EMAIL_TIMEOUT = 30  # Important: Add timeout
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST_PASSWORD = os.environ.get('RESEND_API_KEY') 
