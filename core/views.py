@@ -19,8 +19,8 @@ import json
 import os
 
 # ==================== CONFIGURATION ====================
-# CHANGE ADMIN EMAIL HERE - only change this line
-ADMIN_EMAIL = "benedictibeh279@gmail.com"  # <-- CHANGE THIS TO YOUR ADMIN EMAIL
+# CHANGE ADMIN EMAIL HERE
+ADMIN_EMAIL = "benedictibeh279@gmail.com" 
 
 def get_cart(request):
     if request.user.is_authenticated:
