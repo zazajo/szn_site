@@ -134,40 +134,26 @@ def add_to_cart(request, product_id):
 
     cart = get_cart(request)
 
-    if request.method == 'POST':
-        form = AddToCartForm(request.POST)
-        if form.is_valid():
-            size = form.cleaned_data['size']
+    cart_item, created = CartItem.objects.get_or_create(
+        cart=cart,
+        product=product,
+        defaults={'quantity': 1}
+    )
 
-            cart_item, created = CartItem.objects.get_or_create(
-                cart=cart,
-                product=product,
-                size=size,
-                defaults={'quantity': 1}
-            )
-
-            if not created:
-                if cart_item.quantity + 1 > product.stock_quantity:
-                    messages.error(request, f"Only {product.stock_quantity} items of {product.name} available.")
-                    return redirect('cart')
-                cart_item.quantity += 1
-                cart_item.save()
-            else:
-                if cart_item.quantity > product.stock_quantity:
-                    messages.error(request, f"Only {product.stock_quantity} items of {product.name} available.")
-                    cart_item.delete()
-                    return redirect('cart')
-
-            messages.success(request, f"Added {product.name} (Size: {size}) to cart.")
+    if not created:
+        if cart_item.quantity + 1 > product.stock_quantity:
+            messages.error(request, f"Only {product.stock_quantity} items of {product.name} available.")
             return redirect('cart')
+        cart_item.quantity += 1
+        cart_item.save()
     else:
-        form = AddToCartForm()
+        if cart_item.quantity > product.stock_quantity:
+            messages.error(request, f"Only {product.stock_quantity} items of {product.name} available.")
+            cart_item.delete()
+            return redirect('cart')
 
-    context = {
-        'product': product,
-        'form': form
-    }
-    return render(request, 'add_to_cart.html', context)
+    messages.success(request, f"Added {product.name} to cart.")
+    return redirect('cart')
 
 def remove_from_cart(request, item_id):
     cart_item = get_object_or_404(CartItem, id=item_id)
