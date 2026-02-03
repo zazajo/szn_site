@@ -16,7 +16,7 @@ class SearchForm(forms.Form):
 class CheckoutForm(forms.ModelForm):
     class Meta:
         model = Order
-        fields = ['customer_name', 'customer_email', 'customer_phone', 'customer_address', 'city', 'state']
+        fields = ['customer_name', 'customer_email', 'customer_phone', 'customer_address', 'customer_size', 'city', 'state']
         widgets = {
             'customer_name': forms.TextInput(attrs={
                 'placeholder': 'Name (must match bank account name)',
@@ -34,6 +34,10 @@ class CheckoutForm(forms.ModelForm):
                 'placeholder': 'Delivery address',
                 'class': 'form-input',
                 'rows': 3
+            }),
+            'customer_size': forms.TextInput(attrs={
+                'class': 'form-input',
+                'placeholder': 'e.g., M, L, XL or measurements'
             }),
             'city': forms.TextInput(attrs={
                 'placeholder': 'City',

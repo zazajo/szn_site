@@ -1,4 +1,3 @@
-<!-- product_detail.html -->
 {% extends 'base.html' %}
 {% load static %}
 
@@ -26,27 +25,8 @@
                     {{ product.description }}
                 </p>
                 
-                <!-- Size Selection -->
-                {% with available_sizes=product.get_available_sizes_list %}
-                {% if available_sizes %}
-                <div style="margin-bottom: 30px;">
-                    <label style="display: block; margin-bottom: 10px; font-weight: 600;">Select Size:</label>
-                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                        {% for size in available_sizes %}
-                        <label class="size-option">
-                            <input type="radio" name="size" value="{{ size }}" 
-                                   {% if forloop.first %}checked{% endif %}>
-                            <span>{{ size }}</span>
-                        </label>
-                        {% endfor %}
-                    </div>
-                </div>
-                {% endif %}
-                {% endwith %}
-                
-                <form method="post" action="{% url 'add_to_cart' product.id %}" id="add-to-cart-form">
+                <form method="post" action="{% url 'add_to_cart' product.id %}">
                     {% csrf_token %}
-                    <input type="hidden" name="size" id="selected-size" value="{{ available_sizes.0|default:'' }}">
                     <button type="submit" class="add-to-cart-btn" style="width: auto; padding: 15px 40px;">
                         Add to Cart
                     </button>
@@ -76,51 +56,4 @@
         {% endif %}
     </div>
 </div>
-
-<style>
-.size-option {
-    display: inline-block;
-    cursor: pointer;
-}
-
-.size-option input[type="radio"] {
-    display: none;
-}
-
-.size-option span {
-    display: inline-block;
-    padding: 10px 20px;
-    border: 2px solid #ddd;
-    border-radius: 8px;
-    font-weight: 600;
-    transition: all 0.3s ease;
-}
-
-.size-option input[type="radio"]:checked + span {
-    background: #000;
-    color: white;
-    border-color: #000;
-}
-
-.size-option:hover span {
-    border-color: #000;
-}
-</style>
-
-<script>
-// Update hidden input when size is selected
-document.querySelectorAll('input[name="size"]').forEach(radio => {
-    radio.addEventListener('change', function() {
-        document.getElementById('selected-size').value = this.value;
-    });
-});
-
-// Set initial size value
-document.addEventListener('DOMContentLoaded', function() {
-    const firstSize = document.querySelector('input[name="size"]:checked');
-    if (firstSize) {
-        document.getElementById('selected-size').value = firstSize.value;
-    }
-});
-</script>
 {% endblock %}

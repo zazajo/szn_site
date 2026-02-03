@@ -1,4 +1,3 @@
-# models.py
 from django.db import models
 from django.contrib.auth.models import User
 
@@ -10,41 +9,18 @@ class Category(models.Model):
         return self.name
 
 class Product(models.Model):
-    # Size choices
-    SIZE_CHOICES = [
-        ('XS', 'Extra Small'),
-        ('S', 'Small'),
-        ('M', 'Medium'),
-        ('L', 'Large'),
-        ('XL', 'Extra Large'),
-        ('XXL', 'Extra Extra Large'),
-        ('ONE SIZE', 'One Size'),
-    ]
-    
     name = models.CharField(max_length=200)
     slug = models.SlugField(unique=True)
     price = models.DecimalField(max_digits=10, decimal_places=2)
     category = models.ForeignKey(Category, on_delete=models.CASCADE)
     image = models.ImageField(upload_to='products/')
     featured = models.BooleanField(default=False)
-    stock_quantity = models.PositiveIntegerField(default=0)
-    
-    # New fields for sizes
-    available_sizes = models.CharField(
-        max_length=100,
-        help_text="Comma-separated sizes (e.g., S,M,L,XL). Use 'ONE SIZE' for one-size items."
-    )
+    stock_quantity = models.PositiveIntegerField(default=0)  # New stock field
     created_at = models.DateTimeField(auto_now_add=True)
     
     @property
     def in_stock(self):
         return self.stock_quantity > 0
-    
-    def get_available_sizes_list(self):
-        """Convert comma-separated sizes to list"""
-        if self.available_sizes:
-            return [size.strip() for size in self.available_sizes.split(',')]
-        return []
     
     def __str__(self):
         return self.name
@@ -59,10 +35,10 @@ class CartItem(models.Model):
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField(default=1)
-    size = models.CharField(max_length=10, blank=True)  #Store selected size
     
     def total_price(self):
         return self.product.price * self.quantity
+    
 
 class Order(models.Model):
     ORDER_STATUS = [
@@ -80,11 +56,20 @@ class Order(models.Model):
     customer_address = models.TextField()
     city = models.CharField(max_length=50)
     state = models.CharField(max_length=50)
+    
+    customer_size = models.CharField(
+        max_length=50, 
+        blank=True,
+        verbose_name="Size/Measurement",
+        help_text="e.g., M, L, XL, or measurements"
+    )
+    
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
     payment_deadline = models.DateTimeField()
     status = models.CharField(max_length=20, choices=ORDER_STATUS, default='pending')
     created_at = models.DateTimeField(auto_now_add=True)
-    
+
+
     def __str__(self):
         return self.order_number
 
@@ -93,7 +78,6 @@ class OrderItem(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField()
     price = models.DecimalField(max_digits=10, decimal_places=2)
-    size = models.CharField(max_length=10, blank=True)
     
     def total_price(self):
         return self.price * self.quantity

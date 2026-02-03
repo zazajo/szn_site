@@ -10,15 +10,11 @@
         <div class="order-summary">
             <h3>Order Summary</h3>
             {% for item in cart_items %}
-            <!-- checkout.html - Update the order summary section -->
             <div class="checkout-item">
                 <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}">
                 <div class="item-details">
                     <h4>{{ item.product.name }}</h4>
                     <p>Qty: {{ item.quantity }}</p>
-                    {% if item.size %}
-                    <p style="color: #666; font-size: 0.9rem;">Size: {{ item.size }}</p>
-                    {% endif %}
                     <p class="item-price">₦{{ item.total_price }}</p>
                 </div>
             </div>
@@ -82,6 +78,17 @@
                         {% if form.state.errors %}
                         <div class="error">{{ form.state.errors }}</div>
                         {% endif %}
+                    </div>
+
+                    <div class="form-group">
+                        <label for="{{ form.customer_size.id_for_label }}">Size/Measurement (Optional)</label>
+                        {{ form.customer_size }}
+                        {% if form.customer_size.errors %}
+                        <div class="error">{{ form.customer_size.errors }}</div>
+                        {% endif %}
+                        <small class="form-help">
+                            Enter your size (e.g., M, L, XL) or measurements if needed for custom items
+                        </small>
                     </div>
                 </div>
                 
