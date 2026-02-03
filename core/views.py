@@ -281,6 +281,7 @@ Thank you for your order with SZN IS REAL! 🎉
 📋 ORDER SUMMARY:
 Order #: {order.order_number}
 {items_text}
+Size: {order.customer_size if order.customer_size else 'Not specified'}
 
 💰 TOTAL: ₦{order.total_amount}
 
