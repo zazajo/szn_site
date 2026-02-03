@@ -13,7 +13,6 @@
             <div class="cart-item-details">
                 <h3 class="cart-item-name">{{ item.product.name }}</h3>
                 <p class="cart-item-price">${{ item.product.price }}</p>
-                <p class="cart-item-size">Size: {{ item.size }}</p>
                 
                 <form method="post" action="{% url 'update_cart' item.id %}" class="quantity-controls">
                     {% csrf_token %}
