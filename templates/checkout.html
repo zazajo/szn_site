@@ -10,11 +10,15 @@
         <div class="order-summary">
             <h3>Order Summary</h3>
             {% for item in cart_items %}
+            <!-- checkout.html - Update the order summary section -->
             <div class="checkout-item">
                 <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}">
                 <div class="item-details">
                     <h4>{{ item.product.name }}</h4>
                     <p>Qty: {{ item.quantity }}</p>
+                    {% if item.size %}
+                    <p style="color: #666; font-size: 0.9rem;">Size: {{ item.size }}</p>
+                    {% endif %}
                     <p class="item-price">₦{{ item.total_price }}</p>
                 </div>
             </div>

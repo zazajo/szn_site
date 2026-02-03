@@ -1,3 +1,4 @@
+<!-- cart.html -->
 {% extends 'base.html' %}
 {% load static %}
 
@@ -12,10 +13,17 @@
             
             <div class="cart-item-details">
                 <h3 class="cart-item-name">{{ item.product.name }}</h3>
-                <p class="cart-item-price">${{ item.product.price }}</p>
+                {% if item.size %}
+                <p class="cart-item-size" style="color: #666; font-size: 0.9rem; margin-bottom: 5px;">
+                    Size: {{ item.size }}
+                </p>
+                {% endif %}
+                <p class="cart-item-price">₦{{ item.product.price }}</p>
                 
                 <form method="post" action="{% url 'update_cart' item.id %}" class="quantity-controls">
                     {% csrf_token %}
+                    <!-- Add size to update form -->
+                    <input type="hidden" name="size" value="{{ item.size }}">
                     <button type="button" class="quantity-btn" onclick="decrementQuantity({{ item.id }})">-</button>
                     <input type="number" name="quantity" value="{{ item.quantity }}" min="1" 
                            class="quantity-input" id="quantity-{{ item.id }}">
@@ -38,8 +46,8 @@
         </div>
         
         <div style="text-align: left; margin-top: 20px; text-decoration: none;">
-    <a href="{% url 'checkout' %}" class="checkout-btn">Proceed to Checkout</a>
-</div>
+            <a href="{% url 'checkout' %}" class="checkout-btn">Proceed to Checkout</a>
+        </div>
     {% else %}
         <div style="text-align: center; padding: 60px 0;">
             <h2 style="font-family: var(--font-heading); margin-bottom: 20px;">Your cart is empty</h2>

@@ -9,21 +9,42 @@ class CategoryAdmin(admin.ModelAdmin):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ['name', 'category', 'price', 'stock_quantity', 'in_stock_display', 'featured']
+    list_display = ['name', 'category', 'price', 'available_sizes', 'stock_quantity', 'in_stock_display', 'featured']
     list_filter = ['category', 'featured']
-    list_editable = ['price', 'stock_quantity', 'featured']
+    list_editable = ['price', 'stock_quantity', 'available_sizes', 'featured']
     prepopulated_fields = {'slug': ('name',)}
     search_fields = ['name']
+    fieldsets = (
+        ('Basic Information', {
+            'fields': ('name', 'slug', 'category', 'price', 'description')
+        }),
+        ('Inventory', {
+            'fields': ('stock_quantity', 'available_sizes', 'featured')
+        }),
+        ('Media', {
+            'fields': ('image',)
+        }),
+    )
     
     def in_stock_display(self, obj):
         return obj.in_stock
     in_stock_display.boolean = True
     in_stock_display.short_description = 'In Stock'
 
+@admin.register(CartItem)
+class CartItemAdmin(admin.ModelAdmin):
+    list_display = ['product', 'quantity', 'size', 'cart', 'total_price_display']
+    list_filter = ['cart']
+    search_fields = ['product__name', 'size']
+    
+    def total_price_display(self, obj):
+        return f"₦{obj.total_price()}"
+    total_price_display.short_description = 'Total'
+
 class OrderItemInline(admin.TabularInline):
     model = OrderItem
     extra = 0
-    readonly_fields = ['product', 'quantity', 'price', 'total_price']
+    readonly_fields = ['product', 'quantity', 'size', 'price', 'total_price']
     
     def total_price(self, obj):
         return f"₦{obj.total_price()}"
@@ -52,5 +73,8 @@ class OrderAdmin(admin.ModelAdmin):
         return f"₦{obj.total_amount}"
     total_amount_display.short_description = 'Total Amount'
 
-admin.site.register(Cart)
-admin.site.register(CartItem)
+@admin.register(Cart)
+class CartAdmin(admin.ModelAdmin):
+    list_display = ['id', 'user', 'session_key', 'created_at']
+    list_filter = ['created_at']
+    search_fields = ['user__username', 'session_key']
