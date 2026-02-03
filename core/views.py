@@ -11,7 +11,7 @@ from datetime import timedelta
 import random
 import string
 from .models import Order, OrderItem
-from .forms import CheckoutForm, PaymentVerificationForm
+from .forms import CheckoutForm, PaymentVerificationForm, AddToCartForm
 import threading
 from django.http import HttpResponse
 import requests
@@ -127,30 +127,47 @@ def cart(request):
 
 def add_to_cart(request, product_id):
     product = get_object_or_404(Product, id=product_id)
-    
+
     if product.stock_quantity <= 0:
         messages.error(request, f"Sorry, {product.name} is out of stock.")
         return redirect('products')
-    
+
     cart = get_cart(request)
-    
-    cart_item, created = CartItem.objects.get_or_create(
-        cart=cart,
-        product=product,
-        defaults={'quantity': 1}
-    )
-    
-    if not created:
-        # Item already exists in cart, increase quantity
-        if cart_item.quantity + 1 > product.stock_quantity:
-            messages.error(request, f"Only {product.stock_quantity} items of {product.name} available.")
+
+    if request.method == 'POST':
+        form = AddToCartForm(request.POST)
+        if form.is_valid():
+            size = form.cleaned_data['size']
+
+            cart_item, created = CartItem.objects.get_or_create(
+                cart=cart,
+                product=product,
+                size=size,
+                defaults={'quantity': 1}
+            )
+
+            if not created:
+                if cart_item.quantity + 1 > product.stock_quantity:
+                    messages.error(request, f"Only {product.stock_quantity} items of {product.name} available.")
+                    return redirect('cart')
+                cart_item.quantity += 1
+                cart_item.save()
+            else:
+                if cart_item.quantity > product.stock_quantity:
+                    messages.error(request, f"Only {product.stock_quantity} items of {product.name} available.")
+                    cart_item.delete()
+                    return redirect('cart')
+
+            messages.success(request, f"Added {product.name} (Size: {size}) to cart.")
             return redirect('cart')
-        cart_item.quantity += 1
-        cart_item.save()
-    # Remove the else block that was deleting items!
-    
-    messages.success(request, f"Added {product.name} to cart.")
-    return redirect('cart')
+    else:
+        form = AddToCartForm()
+
+    context = {
+        'product': product,
+        'form': form
+    }
+    return render(request, 'add_to_cart.html', context)
 
 def remove_from_cart(request, item_id):
     cart_item = get_object_or_404(CartItem, id=item_id)
@@ -233,7 +250,7 @@ def send_order_confirmation(order, cart_items):
     """
     def send_emails():
         try:
-            items_text = "\n".join([f"- {item.product.name} (Qty: {item.quantity}) - ₦{item.total_price()}" 
+            items_text = "\n".join([f"- {item.product.name} (Size: {item.size}, Qty: {item.quantity}) - ₦{item.total_price()}" 
                                    for item in cart_items])
             
             # 1. Email to ADMIN

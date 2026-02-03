@@ -61,6 +61,14 @@
                         {% if product.in_stock %}
                         <form method="post" action="{% url 'add_to_cart' product.id %}" class="add-to-cart-form-mobile">
                             {% csrf_token %}
+                            <label for="size">Size:</label>
+                            <select name="size" id="size" class="form-select">
+                                <option value="S">Small</option>
+                                <option value="M">Medium</option>
+                                <option value="L">Large</option>
+                                <option value="XL">Extra Large</option>
+                                <option value="XXL">Double Extra Large</option>
+                            </select>
                             <button type="submit" class="add-to-cart-btn-mobile">
                                 Add to Cart
                             </button>
@@ -78,6 +86,14 @@
                     {% if product.in_stock %}
                     <form method="post" action="{% url 'add_to_cart' product.id %}" class="add-to-cart-form">
                         {% csrf_token %}
+                        <label for="size">Size:</label>
+                        <select name="size" id="size" class="form-select">
+                            <option value="S">Small</option>
+                            <option value="M">Medium</option>
+                            <option value="L">Large</option>
+                            <option value="XL">Extra Large</option>
+                            <option value="XXL">Double Extra Large</option>
+                        </select>
                         <button type="submit" class="add-to-cart-btn-modern">
                             <span>Add to Cart</span>
                             <span class="price-tag">₦{{ product.price }}</span>

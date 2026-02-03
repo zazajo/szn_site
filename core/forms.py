@@ -65,3 +65,9 @@ class PaymentVerificationForm(forms.Form):
         if len(name.strip()) < 2:
             raise forms.ValidationError("Please enter your name.")
         return name.strip()
+
+class AddToCartForm(forms.Form):
+    size = forms.ChoiceField(
+        choices=[('S', 'Small'), ('M', 'Medium'), ('L', 'Large'), ('XL', 'Extra Large'), ('XXL', 'Double Extra Large')],
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
