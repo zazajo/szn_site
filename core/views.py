@@ -234,14 +234,14 @@ def send_order_confirmation(order, cart_items):
     """
     Send order confirmation emails via Resend API
     """
-    def send_emails():
-        try:
-            items_text = "\n".join([f"- {item.product.name} (Size: {item.size}, Qty: {item.quantity}) - ₦{item.total_price()}" 
-                                   for item in cart_items])
-            
-            # 1. Email to ADMIN
-            admin_subject = f'💰 New Order: {order.order_number}'
-            admin_message = f"""
+    try:
+        # Remove the "(Size: {item.size})" part since size is now in Order, not CartItem
+        items_text = "\n".join([f"- {item.product.name} (Qty: {item.quantity}) - ₦{item.total_price()}" 
+                               for item in cart_items])
+        
+        # 1. Email to ADMIN
+        admin_subject = f'💰 New Order: {order.order_number}'
+        admin_message = f"""
 🛒 NEW ORDER RECEIVED
 
 Order #: {order.order_number}
@@ -258,22 +258,22 @@ Address: {order.customer_address}, {order.city}, {order.state}
 
 ⏰ PAYMENT DEADLINE: {order.payment_deadline.strftime('%Y-%m-%d %H:%M:%S')}
 """
-            
-            print(f"\n📧 Sending admin email for order {order.order_number}")
-            success, msg = send_resend_email(
-                ADMIN_EMAIL,  # Using the config variable
-                admin_subject,
-                admin_message
-            )
-            
-            if success:
-                print(f"✅ Admin email sent")
-            else:
-                print(f"❌ Admin email failed: {msg}")
-            
-            # 2. Email to CUSTOMER
-            customer_subject = f'✅ Order Confirmation: #{order.order_number}'
-            customer_message = f"""
+        
+        print(f"\n📧 SENDING ADMIN EMAIL FOR ORDER {order.order_number}")
+        success, msg = send_resend_email(
+            ADMIN_EMAIL,  # Using the config variable
+            admin_subject,
+            admin_message
+        )
+        
+        if success:
+            print(f"✅ Admin email sent")
+        else:
+            print(f"❌ Admin email failed: {msg}")
+        
+        # 2. Email to CUSTOMER
+        customer_subject = f'✅ Order Confirmation: #{order.order_number}'
+        customer_message = f"""
 Hi {order.customer_name},
 
 Thank you for your order with SZN IS REAL! 🎉
@@ -294,43 +294,37 @@ If you have questions, reply to this email or contact us.
 Thank you for shopping with us!
 SZN IS REAL Team
 """
+        
+        print(f"\n📧 SENDING CUSTOMER EMAIL FOR ORDER {order.order_number}")
+        success, msg = send_resend_email(
+            order.customer_email,
+            customer_subject,
+            customer_message
+        )
+        
+        if success:
+            print(f"✅ Customer email sent")
+        else:
+            print(f"❌ Customer email failed: {msg}")
             
-            print(f"\n📧 Sending customer email for order {order.order_number}")
-            success, msg = send_resend_email(
-                order.customer_email,
-                customer_subject,
-                customer_message
-            )
-            
-            if success:
-                print(f"✅ Customer email sent")
-            else:
-                print(f"❌ Customer email failed: {msg}")
-                
-        except Exception as e:
-            print(f"🔥 Error in email thread: {e}")
-            import traceback
-            traceback.print_exc()
-    
-    # Start email thread
-    email_thread = threading.Thread(target=send_emails, daemon=True)
-    email_thread.start()
+    except Exception as e:
+        print(f"🔥 Error sending order confirmation emails: {e}")
+        import traceback
+        traceback.print_exc()
 
 def send_payment_verification(order, customer_name):
-    """
-    Send payment verification email via Resend API
-    """
-    def send_email():
-        try:
-            subject = f'💳 Payment Verification - Order #{order.order_number}'
-            
-            message = f"""
+    """Send payment verification email"""
+    try:
+        subject = f'💳 Payment Verification - Order #{order.order_number}'
+        
+        message = f"""
 💰 PAYMENT VERIFICATION RECEIVED
 
 Order #: {order.order_number}
 Customer: {customer_name}
 Email: {order.customer_email}
 Phone: {order.customer_phone}
+Size: {order.customer_size if order.customer_size else 'Not specified'}
 
 ⚠️ Customer claims to have made payment. Please verify:
 
@@ -342,24 +336,21 @@ Items: {', '.join([item.product.name for item in order.orderitem_set.all()])}
 
 Once verified, contact customer and update order status.
 """
+        
+        print(f"\n📧 SENDING PAYMENT VERIFICATION FOR ORDER {order.order_number}")
+        success, msg = send_resend_email(
+            ADMIN_EMAIL,
+            subject,
+            message
+        )
+        
+        if success:
+            print(f"✅ Payment verification sent")
+        else:
+            print(f"❌ Payment verification failed: {msg}")
             
-            print(f"\n📧 Sending payment verification for order {order.order_number}")
-            success, msg = send_resend_email(
-                ADMIN_EMAIL,  # Using the config variable
-                subject,
-                message
-            )
-            
-            if success:
-                print(f"✅ Payment verification sent")
-            else:
-                print(f"❌ Payment verification failed: {msg}")
-                
-        except Exception as e:
-            print(f"Payment verification error: {e}")
-    
-    email_thread = threading.Thread(target=send_email, daemon=True)
-    email_thread.start()
+    except Exception as e:
+        print(f"Payment verification error: {e}")
 
 # ==================== VIEWS ====================
 
@@ -455,38 +446,6 @@ def verify_payment(request, order_number):
     return render(request, 'verify_payment.html', context)
 
 # ==================== TEST ENDPOINTS ====================
-
-def test_resend_api_direct(request):
-    """Test Resend API directly"""
-    import time
-    
-    results = []
-    
-    api_key = os.environ.get('RESEND_API_KEY')
-    results.append(f"<h2>API Key Check</h2>")
-    results.append(f"API Key: {'✅ SET' if api_key else '❌ NOT SET'}")
-    
-    results.append(f"<h2>Sending Test Email</h2>")
-    
-    test_subject = f"Test from Railway API - {int(time.time())}"
-    test_message = f"This is a direct API test at {timezone.now()}"
-    
-    results.append(f"Sending to: {ADMIN_EMAIL}")
-    results.append(f"Subject: {test_subject}")
-    
-    success, message = send_resend_email(
-        ADMIN_EMAIL,
-        test_subject,
-        test_message
-    )
-    
-    if success:
-        results.append(f"<h3 style='color: green;'>✅ SUCCESS: {message}</h3>")
-        results.append("Check your email inbox and spam folder")
-    else:
-        results.append(f"<h3 style='color: red;'>❌ FAILED: {message}</h3>")
-    
-    return HttpResponse("<br>".join(results))
 
 def final_email_test(request):
     """Test complete email flow"""
