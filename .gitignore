@@ -1,1 +1,26 @@
+#environment vars
 .env
+.env.*
+
+#virtual envs
+venv/
+.venv/
+
+#python
+__pycache__/
+*.py[cod]
+*$py.class
+
+#Django
+db.sqlite3
+db.sqlite3-journal
+media/
+staticfiles/
+
+#os files
+.DS_Store
+Thumbs.db
+
+#IDE/editor
+.vscode/
+.idea/
